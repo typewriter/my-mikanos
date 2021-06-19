@@ -27,6 +27,6 @@
 
 #@range_begin(components)
 [Components]
-  helloworld_edk2/Loader.inf
+  write_memmap/Loader.inf
 #@range_end(components)
 
