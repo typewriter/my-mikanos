@@ -4,6 +4,7 @@
 #include "frame_buffer_config.hpp"
 #include "graphics.hpp"
 #include "fonts.hpp"
+#include "console.hpp"
 
 void *
 operator new(size_t size, void *buf)
@@ -18,7 +19,25 @@ void operator delete(void *obj) noexcept
 char pixel_writer_buf[sizeof(RGBResv8BitPerColorPixelWriter)];
 PixelWriter *pixel_writer;
 
-extern "C" void KernelMain(const FrameBufferConfig &frame_buffer_config)
+char console_buf[sizeof(Console)];
+Console *console;
+
+int printk(const char *format, ...)
+{
+  va_list ap;
+  int result;
+  char s[1024];
+
+  va_start(ap, format);
+  result = vsprintf(s, format, ap);
+  va_end(ap);
+
+  console->PutString(s);
+  return result;
+}
+
+extern "C" void
+KernelMain(const FrameBufferConfig &frame_buffer_config)
 {
   switch (frame_buffer_config.pixel_format)
   {
@@ -66,6 +85,15 @@ extern "C" void KernelMain(const FrameBufferConfig &frame_buffer_config)
   char buf[128];
   sprintf(buf, "123 + 456 = %d, 12.3 + 34.5 = %.1f", 123 + 456, 12.3 + 34.5);
   WriteString(*pixel_writer, 50, 140, buf, {0, 128, 0});
+
+  pixel_writer = new (pixel_writer_buf) RGBResv8BitPerColorPixelWriter{frame_buffer_config};
+  console = new (console_buf) Console{*pixel_writer, {0, 0, 0}, {255, 255, 255}};
+  for (int i = 0; i < 40; i++)
+  {
+    sprintf(buf, "Line %d by PutString", i);
+    console->PutString(buf);
+    printk(", Line %d by printk\n", i);
+  }
 
   while (1)
     __asm__("hlt");
