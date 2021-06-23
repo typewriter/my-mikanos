@@ -6,8 +6,39 @@
 #include "fonts.hpp"
 #include "console.hpp"
 
-void *
-operator new(size_t size, void *buf)
+const int kMouseCursorWidth = 15;
+const int kMouseCursorHeight = 24;
+const char mouse_cursor_shape[kMouseCursorHeight][kMouseCursorWidth + 1] = {
+    "@              ",
+    "@@             ",
+    "@.@            ",
+    "@..@           ",
+    "@...@          ",
+    "@....@         ",
+    "@.....@        ",
+    "@......@       ",
+    "@.......@      ",
+    "@........@     ",
+    "@.........@    ",
+    "@..........@   ",
+    "@...........@  ",
+    "@............@ ",
+    "@......@@@@@@@@",
+    "@......@       ",
+    "@....@@.@      ",
+    "@...@ @.@      ",
+    "@..@   @.@     ",
+    "@.@    @.@     ",
+    "@@      @.@    ",
+    "@       @.@    ",
+    "         @.@   ",
+    "         @@@   ",
+};
+
+const PixelColor kDesktopBGColor{58, 110, 165};
+const PixelColor kDesktopFGColor{255, 255, 255};
+
+void *operator new(size_t size, void *buf)
 {
   return buf;
 }
@@ -49,50 +80,91 @@ KernelMain(const FrameBufferConfig &frame_buffer_config)
     break;
   }
 
-  for (int x = 0; x < frame_buffer_config.horizontal_resolution; ++x)
+  // for (int x = 0; x < frame_buffer_config.horizontal_resolution; ++x)
+  // {
+  //   for (int y = 0; y < frame_buffer_config.vertical_resolution; ++y)
+  //   {
+  //     pixel_writer->Write(x, y, {255, 255, 255});
+  //   }
+  // }
+
+  // for (int x = 0; x < 200; ++x)
+  // {
+  //   for (int y = 0; y < 100; ++y)
+  //   {
+  //     pixel_writer->Write(50 + x, 50 + y, {0, 255, 0});
+  //   }
+  // }
+
+  // for (int x = 0; x < 100; ++x)
+  // {
+  //   for (int y = 0; y < 50; ++y)
+  //   {
+  //     pixel_writer->Write(350 + x, 200 + y, {0, 0, 255});
+  //   }
+  // }
+
+  // int i = 0;
+  // for (char c = '!'; c <= '~'; c++)
+  // {
+  //   WriteAscii(*pixel_writer, 50 + (i % 24 * 10), 50 + (i / 24 * 16), c, {0, 0, 0});
+  //   i++;
+  // }
+
+  // WriteString(*pixel_writer, 50, 120, "Konnichiwa!!!", {0, 0, 128});
+
+  // char buf[128];
+  // sprintf(buf, "123 + 456 = %d, 12.3 + 34.5 = %.1f", 123 + 456, 12.3 + 34.5);
+  // WriteString(*pixel_writer, 50, 140, buf, {0, 128, 0});
+
+  // pixel_writer = new (pixel_writer_buf) RGBResv8BitPerColorPixelWriter{frame_buffer_config};
+  // console = new (console_buf) Console{*pixel_writer, {0, 0, 0}, {255, 255, 255}};
+  // for (int i = 0; i < 40; i++)
+  // {
+  //   sprintf(buf, "Line %d by PutString", i);
+  //   console->PutString(buf);
+  //   printk(", Line %d by printk\n", i);
+  // }
+
+  const int kFrameWidth = frame_buffer_config.horizontal_resolution;
+  const int kFrameHeight = frame_buffer_config.vertical_resolution;
+
+  FillRectangle(*pixel_writer,
+                {0, 0},
+                {kFrameWidth, kFrameHeight - 32},
+                kDesktopBGColor);
+  FillRectangle(*pixel_writer,
+                {0, kFrameHeight - 32},
+                {kFrameWidth, 32},
+                {0, 0, 0});
+  FillRectangle(*pixel_writer,
+                {4, kFrameHeight - 28},
+                {24, 24},
+                {255, 255, 255});
+  DrawRectangle(*pixel_writer,
+                {kFrameWidth - 64, kFrameHeight - 28},
+                {60, 24},
+                {128, 128, 128});
+
+  WriteString(*pixel_writer, kFrameWidth - 56, kFrameHeight - 24, "22:30", {255, 255, 255});
+
+  console = new (console_buf) Console{*pixel_writer,
+                                      kDesktopFGColor, kDesktopBGColor};
+  printk("Konnichiwa!");
+
+  for (int dy = 0; dy < kMouseCursorHeight; ++dy)
   {
-    for (int y = 0; y < frame_buffer_config.vertical_resolution; ++y)
+    for (int dx = 0; dx < kMouseCursorWidth; ++dx)
     {
-      pixel_writer->Write(x, y, {255, 255, 255});
+      if (mouse_cursor_shape[dy][dx] == '@')
+      {
+        pixel_writer->Write(200 + dx, 100 + dy, {0, 0, 0});
+      }
+      else if (mouse_cursor_shape[dy][dx] == '.')
+      {
+        pixel_writer->Write(200 + dx, 100 + dy, {255, 255, 255});
+      }
     }
-  }
-
-  for (int x = 0; x < 200; ++x)
-  {
-    for (int y = 0; y < 100; ++y)
-    {
-      pixel_writer->Write(50 + x, 50 + y, {0, 255, 0});
-    }
-  }
-
-  for (int x = 0; x < 100; ++x)
-  {
-    for (int y = 0; y < 50; ++y)
-    {
-      pixel_writer->Write(350 + x, 200 + y, {0, 0, 255});
-    }
-  }
-
-  int i = 0;
-  for (char c = '!'; c <= '~'; c++)
-  {
-    WriteAscii(*pixel_writer, 50 + (i % 24 * 10), 50 + (i / 24 * 16), c, {0, 0, 0});
-    i++;
-  }
-
-  WriteString(*pixel_writer, 50, 120, "Konnichiwa!!!", {0, 0, 128});
-
-  char buf[128];
-  sprintf(buf, "123 + 456 = %d, 12.3 + 34.5 = %.1f", 123 + 456, 12.3 + 34.5);
-  WriteString(*pixel_writer, 50, 140, buf, {0, 128, 0});
-
-  pixel_writer = new (pixel_writer_buf) RGBResv8BitPerColorPixelWriter{frame_buffer_config};
-  console = new (console_buf) Console{*pixel_writer, {0, 0, 0}, {255, 255, 255}};
-  for (int i = 0; i < 40; i++)
-  {
-    sprintf(buf, "Line %d by PutString", i);
-    console->PutString(buf);
-    printk(", Line %d by printk\n", i);
   }
 
   while (1)
