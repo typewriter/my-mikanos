@@ -30,7 +30,7 @@ namespace pci
     Error ScanBus(uint8_t bus);
     Error ScanDevice(uint8_t bus, uint8_t device);
     Error ScanFunction(uint8_t bus, uint8_t device, uint8_t function);
-    Error AddDevice(uint8_t bus, uint8_t device, uint8_t function, uint8_t header_type);
+    // Error AddDevice(Device *device);
 
     uint32_t MakeAddress(uint8_t bus, uint8_t device, uint8_t function, uint8_t reg_addr);
 
@@ -40,7 +40,21 @@ namespace pci
     uint16_t ReadVendorId(uint8_t bus, uint8_t device, uint8_t function);
     uint16_t ReadDeviceId(uint8_t bus, uint8_t device, uint8_t function);
     uint8_t ReadHeaderType(uint8_t bus, uint8_t device, uint8_t function);
-    uint32_t ReadClassCode(uint8_t bus, uint8_t device, uint8_t function);
+    ClassCode ReadClassCode(uint8_t bus, uint8_t device, uint8_t function);
     uint32_t ReadBusNumbers(uint8_t bus, uint8_t device, uint8_t function);
     bool IsSingleFunctionDevice(uint8_t header_type);
+
+    inline uint16_t ReadVendorId(const Device &dev)
+    {
+        return ReadVendorId(dev.bus, dev.device, dev.function);
+    }
+
+    uint32_t ReadConfReg(const Device &dev, uint8_t reg_addr);
+    void WriteConfReg(const Device &dev, uint8_t reg_addr, uint32_t value);
+
+    constexpr uint8_t CalcBarAddress(unsigned int bar_index)
+    {
+        return 0x10 + 4 * bar_index;
+    }
+    WithError<uint64_t> ReadBar(Device &device, unsigned int bar_index);
 }
