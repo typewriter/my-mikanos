@@ -5,6 +5,7 @@
 #include "graphics.hpp"
 #include "fonts.hpp"
 #include "console.hpp"
+#include "pci.hpp"
 
 const int kMouseCursorWidth = 15;
 const int kMouseCursorHeight = 24;
@@ -38,10 +39,10 @@ const char mouse_cursor_shape[kMouseCursorHeight][kMouseCursorWidth + 1] = {
 const PixelColor kDesktopBGColor{58, 110, 165};
 const PixelColor kDesktopFGColor{255, 255, 255};
 
-void *operator new(size_t size, void *buf)
-{
-  return buf;
-}
+// void *operator new(size_t size, void *buf)
+// {
+//   return buf;
+// }
 
 void operator delete(void *obj) noexcept
 {
@@ -150,7 +151,38 @@ KernelMain(const FrameBufferConfig &frame_buffer_config)
 
   console = new (console_buf) Console{*pixel_writer,
                                       kDesktopFGColor, kDesktopBGColor};
-  printk("Konnichiwa!");
+  printk("Konnichiwa!\n");
+
+  auto err = pci::ScanAllBus();
+  printk("ScanAllBus: %s\n", err.Name());
+
+  for (int i = 0; i < pci::num_device; ++i)
+  {
+    const auto &dev = pci::devices[i];
+    auto vendor_id = pci::ReadVendorId(dev.bus, dev.device, dev.function);
+    auto class_code = pci::ReadClassCode(dev.bus, dev.device, dev.function);
+    printk("%d.%d.%d: vend %04x, class %08x, head %02x\n",
+           dev.bus, dev.device, dev.function, vendor_id, class_code, dev.header_type);
+  }
+
+  pci::Device *xhc_dev = nullptr;
+  for (int i = 0; i < pci::num_device; ++i)
+  {
+    if (pci::devices[i].class_code.Match(0x0cu, 0x03u, 0x30u))
+    {
+      xhc_dev = &pci::devices[i];
+
+      if (0x8086 == pci::ReadVendorId(xhc_dev->bus, xhc_dev->device, xhc_dev->function))
+      {
+        break;
+      }
+    }
+  }
+
+  if (xhc_dev)
+  {
+    printk("xHC has been found: %d.%d.%d\n", xhc_dev->bus, xhc_dev->device, xhc_dev->function);
+  }
 
   for (int dy = 0; dy < kMouseCursorHeight; ++dy)
   {

@@ -1,5 +1,5 @@
 TARGET = kernel.elf
-OBJS = $(patsubst %.cpp,%.o,$(wildcard *.cpp)) hankaku.o newlib_support.o
+OBJS = $(patsubst %.asm,%.o,$(wildcard *.asm)) $(patsubst %.cpp,%.o,$(wildcard *.cpp)) hankaku.o newlib_support.o
 DEPENDS = $(join $(dir $(OBJS)),$(addprefix .,$(notdir $(OBJS:.o=.d))))
 CFLAGS   += -O2 -Wall -g --target=x86_64-elf -ffreestanding -mno-red-zone
 CXXFLAGS += -O2 -Wall -g --target=x86_64-elf -ffreestanding -mno-red-zone -fno-exceptions -fno-rtti -std=c++17
@@ -30,6 +30,9 @@ kernel.elf: $(OBJS) Makefile
 	clang $(CPPFLAGS) $(CFLAGS) -MM $< > $@
 	$(eval OBJ = $(<:.c=.o))
 	sed --in-place 's|$(notdir $(OBJ))|$(OBJ)|' $@
+
+%.o: %.asm Makefile
+	nasm -f elf64 -o $@ $<
 
 hankaku.bin: hankaku.txt
 	../tools/makefont.py -o $@ $<
