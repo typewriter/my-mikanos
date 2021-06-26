@@ -10,6 +10,7 @@
 #include "mouse.hpp"
 #include "error.hpp"
 #include "interrupt.hpp"
+#include "queue.hpp"
 #include "usb/xhci/xhci.hpp"
 #include "usb/classdriver/mouse.hpp"
 
@@ -76,25 +77,29 @@ void MouseObserver(int8_t displacement_x, int8_t displacement_y)
   mouse_cursor->MoveRelative({displacement_x, displacement_y});
 }
 
-usb::xhci::Controller *xhc;
-
 void NotifyEndOfInterrupt()
 {
   volatile auto end_of_interrupt = reinterpret_cast<uint32_t *>(0xfee000b0);
   *end_of_interrupt = 0;
 }
 
+struct Message
+{
+  enum Type
+  {
+    kInterruptXHCI,
+  } type;
+};
+
+ArrayQueue<Message> *main_queue;
+
 __attribute__((interrupt)) void IntHandlerXHCI(InterruptFrame *frame)
 {
-  while (xhc->PrimaryEventRing()->HasFront())
-  {
-    if (auto err = ProcessEvent(*xhc))
-    {
-      printk("Error while ProcessEvent: %s at %s:%d\n", err.Name(), err.File(), err.Line());
-    }
-  }
+  main_queue->Push(Message{Message::kInterruptXHCI});
   NotifyEndOfInterrupt();
 }
+
+usb::xhci::Controller *xhc;
 
 extern "C" void
 KernelMain(const FrameBufferConfig &frame_buffer_config)
@@ -245,7 +250,6 @@ KernelMain(const FrameBufferConfig &frame_buffer_config)
   xhc.Run();
 
   ::xhc = &xhc;
-  __asm__("sti");
 
   usb::HIDMouseDriver::default_observer = MouseObserver;
 
@@ -261,6 +265,39 @@ KernelMain(const FrameBufferConfig &frame_buffer_config)
         printk("Failed to configure port: %s at %s:%d\n", err.Name(), err.File(), err.Line());
         continue;
       }
+    }
+  }
+
+  std::array<Message, 32> main_queue_data;
+  ArrayQueue<Message> main_queue{main_queue_data};
+  ::main_queue = &main_queue;
+
+  while (true)
+  {
+    __asm__("cli");
+    if (main_queue.Count() == 0)
+    {
+      __asm__("sti\n\thlt");
+      continue;
+    }
+
+    Message msg = main_queue.Front();
+    main_queue.Pop();
+    __asm__("sti");
+
+    switch (msg.type)
+    {
+    case Message::kInterruptXHCI:
+      while (xhc.PrimaryEventRing()->HasFront())
+      {
+        if (auto err = ProcessEvent(xhc))
+        {
+          printk("Error while ProcessEvent: %s at %s:%d\n", err.Name(), err.File(), err.Line());
+        }
+      }
+      break;
+    default:
+      printk("Unknown message type: %d\n", msg.type);
     }
   }
 
