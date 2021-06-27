@@ -11,6 +11,7 @@
 #include "error.hpp"
 #include "interrupt.hpp"
 #include "queue.hpp"
+#include "memory_map.hpp"
 #include "usb/xhci/xhci.hpp"
 #include "usb/classdriver/mouse.hpp"
 
@@ -102,7 +103,7 @@ __attribute__((interrupt)) void IntHandlerXHCI(InterruptFrame *frame)
 usb::xhci::Controller *xhc;
 
 extern "C" void
-KernelMain(const FrameBufferConfig &frame_buffer_config)
+KernelMain(const FrameBufferConfig &frame_buffer_config, const MemoryMap &memory_map)
 {
   switch (frame_buffer_config.pixel_format)
   {
@@ -113,52 +114,6 @@ KernelMain(const FrameBufferConfig &frame_buffer_config)
     pixel_writer = new (pixel_writer_buf) BGRResv8BitPerColorPixelWriter{frame_buffer_config};
     break;
   }
-
-  // for (int x = 0; x < frame_buffer_config.horizontal_resolution; ++x)
-  // {
-  //   for (int y = 0; y < frame_buffer_config.vertical_resolution; ++y)
-  //   {
-  //     pixel_writer->Write(x, y, {255, 255, 255});
-  //   }
-  // }
-
-  // for (int x = 0; x < 200; ++x)
-  // {
-  //   for (int y = 0; y < 100; ++y)
-  //   {
-  //     pixel_writer->Write(50 + x, 50 + y, {0, 255, 0});
-  //   }
-  // }
-
-  // for (int x = 0; x < 100; ++x)
-  // {
-  //   for (int y = 0; y < 50; ++y)
-  //   {
-  //     pixel_writer->Write(350 + x, 200 + y, {0, 0, 255});
-  //   }
-  // }
-
-  // int i = 0;
-  // for (char c = '!'; c <= '~'; c++)
-  // {
-  //   WriteAscii(*pixel_writer, 50 + (i % 24 * 10), 50 + (i / 24 * 16), c, {0, 0, 0});
-  //   i++;
-  // }
-
-  // WriteString(*pixel_writer, 50, 120, "Konnichiwa!!!", {0, 0, 128});
-
-  // char buf[128];
-  // sprintf(buf, "123 + 456 = %d, 12.3 + 34.5 = %.1f", 123 + 456, 12.3 + 34.5);
-  // WriteString(*pixel_writer, 50, 140, buf, {0, 128, 0});
-
-  // pixel_writer = new (pixel_writer_buf) RGBResv8BitPerColorPixelWriter{frame_buffer_config};
-  // console = new (console_buf) Console{*pixel_writer, {0, 0, 0}, {255, 255, 255}};
-  // for (int i = 0; i < 40; i++)
-  // {
-  //   sprintf(buf, "Line %d by PutString", i);
-  //   console->PutString(buf);
-  //   printk(", Line %d by printk\n", i);
-  // }
 
   const int kFrameWidth = frame_buffer_config.horizontal_resolution;
   const int kFrameHeight = frame_buffer_config.vertical_resolution;
@@ -268,6 +223,32 @@ KernelMain(const FrameBufferConfig &frame_buffer_config)
     }
   }
 
+  const std::array available_memory_types{
+      MemoryType::kEfiBootServicesCode,
+      MemoryType::kEfiBootServicesData,
+      MemoryType::kEfiConventionalMemory,
+  };
+
+  printk("Memory map: %p\n", &memory_map);
+  for (uintptr_t iter = reinterpret_cast<uintptr_t>(memory_map.buffer);
+       iter < reinterpret_cast<uintptr_t>(memory_map.buffer) + memory_map.map_size;
+       iter += memory_map.descriptor_size)
+  {
+    auto desc = reinterpret_cast<MemoryDescriptor *>(iter);
+    for (int i = 0; i < available_memory_types.size(); ++i)
+    {
+      if (desc->type == available_memory_types[i])
+      {
+        printk("type = %u, phys = %08lx, pages = %lu, attr = %08lx\n",
+               desc->type,
+               desc->physical_start,
+               desc->physical_start + desc->number_of_pages * 4096 - 1,
+               desc->number_of_pages,
+               desc->attribute);
+      }
+    }
+  }
+
   std::array<Message, 32> main_queue_data;
   ArrayQueue<Message> main_queue{main_queue_data};
   ::main_queue = &main_queue;
@@ -300,29 +281,6 @@ KernelMain(const FrameBufferConfig &frame_buffer_config)
       printk("Unknown message type: %d\n", msg.type);
     }
   }
-
-  // while (1)
-  // {
-  //   if (auto err = ProcessEvent(xhc))
-  //   {
-  //     printk("Error while ProcessEvent: %s at %s:%d\n", err.Name(), err.File(), err.Line());
-  //   }
-  // }
-
-  // for (int dy = 0; dy < kMouseCursorHeight; ++dy)
-  // {
-  //   for (int dx = 0; dx < kMouseCursorWidth; ++dx)
-  //   {
-  //     if (mouse_cursor_shape[dy][dx] == '@')
-  //     {
-  //       pixel_writer->Write(200 + dx, 100 + dy, {0, 0, 0});
-  //     }
-  //     else if (mouse_cursor_shape[dy][dx] == '.')
-  //     {
-  //       pixel_writer->Write(200 + dx, 100 + dy, {255, 255, 255});
-  //     }
-  //   }
-  // }
 
   while (1)
     __asm__("hlt");
