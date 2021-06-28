@@ -15,6 +15,7 @@
 #include "segment.hpp"
 #include "memory_map.hpp"
 #include "paging.hpp"
+#include "memory_manager.hpp"
 #include "usb/xhci/xhci.hpp"
 #include "usb/classdriver/mouse.hpp"
 
@@ -80,6 +81,9 @@ void MouseObserver(int8_t displacement_x, int8_t displacement_y)
 {
   mouse_cursor->MoveRelative({displacement_x, displacement_y});
 }
+
+char memory_manager_buf[sizeof(BitmapMemoryManager)];
+BitmapMemoryManager *memory_manager;
 
 void NotifyEndOfInterrupt()
 {
@@ -266,7 +270,38 @@ extern "C" void KernelMainNewStack(
     }
   }
 
-  std::array<Message, 32> main_queue_data;
+  ::memory_manager = new (memory_manager_buf) BitmapMemoryManager;
+
+  const auto memory_map_base = reinterpret_cast<uintptr_t>(memory_map.buffer);
+  uintptr_t available_end = 0;
+  for (uintptr_t iter = memory_map_base;
+       iter < memory_map_base + memory_map.map_size;
+       iter += memory_map.descriptor_size)
+  {
+    auto desc = reinterpret_cast<const MemoryDescriptor *>(iter);
+    if (available_end < desc->physical_start)
+    {
+      memory_manager->MarkAllocated(FrameID{available_end / kBytesPerFrame},
+                                    (desc->physical_start - available_end) / kBytesPerFrame);
+    }
+
+    const auto physical_end =
+        desc->physical_start + desc->number_of_pages * kUEFIPageSize;
+    if (IsAvailable(static_cast<MemoryType>(desc->type)))
+    {
+      available_end = physical_end;
+    }
+    else
+    {
+      memory_manager->MarkAllocated(
+          FrameID{desc->physical_start / kBytesPerFrame},
+          desc->number_of_pages * kUEFIPageSize / kBytesPerFrame);
+    }
+  }
+  memory_manager->SetMemoryRange(FrameID{1}, FrameID{available_end / kBytesPerFrame});
+
+  std::array<Message, 32>
+      main_queue_data;
   ArrayQueue<Message> main_queue{main_queue_data};
   ::main_queue = &main_queue;
 
