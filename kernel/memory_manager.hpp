@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cstdlib>
+// #include <cstdlib>
 #include <limits>
 #include <array>
 #include "error.hpp"
@@ -63,3 +63,5 @@ private:
     bool GetBit(FrameID frame) const;
     void SetBit(FrameID frame, bool allocated);
 };
+
+Error InitializeHeap(BitmapMemoryManager &memory_manager);
