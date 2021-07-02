@@ -45,6 +45,10 @@ void DrawMouseCursor(PixelWriter *pixel_writer, Vector2D<int> position)
             {
                 pixel_writer->Write(position.x + dx, position.y + dy, {255, 255, 255});
             }
+            else
+            {
+                pixel_writer->Write(position.x + dx, position.y + dy, kMouseTransparentColor);
+            }
         }
     }
 }
