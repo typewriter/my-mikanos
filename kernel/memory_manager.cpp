@@ -54,7 +54,7 @@ WithError<FrameID> BitmapMemoryManager::Allocate(size_t num_frames)
             {
                 return {kNullFrame, MAKE_ERROR(Error::kNoEnoughMemory)};
             }
-            if (GetBit(FrameID{start_frame_id + 1}))
+            if (GetBit(FrameID{start_frame_id + i}))
             {
                 break;
             }

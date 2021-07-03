@@ -319,13 +319,13 @@ extern "C" void KernelMainNewStack(
 
   printk("Make shared window...\n");
 
-  auto bgwindow = std::make_shared<Window>(kFrameWidth, kFrameHeight / 8);
+  auto bgwindow = std::make_shared<Window>(kFrameWidth, kFrameHeight);
   auto bgwriter = bgwindow->Writer();
 
   printk("Draw desktop using bgwriter...\n");
 
   DrawDesktop(*bgwriter);
-  // console->SetWriter(bgwriter);
+  console->SetWriter(bgwriter);
 
   printk("Using bgwriter...\n");
 
