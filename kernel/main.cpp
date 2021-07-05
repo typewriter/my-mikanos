@@ -325,7 +325,7 @@ extern "C" void KernelMainNewStack(
 
   printk("Make shared window...\n");
 
-  auto bgwindow = std::make_shared<Window>(kFrameWidth, kFrameHeight);
+  auto bgwindow = std::make_shared<Window>(kFrameWidth, kFrameHeight, frame_buffer_config.pixel_format);
   auto bgwriter = bgwindow->Writer();
 
   printk("Draw desktop using bgwriter...\n");
@@ -336,17 +336,25 @@ extern "C" void KernelMainNewStack(
   printk("Using bgwriter...\n");
 
   auto mouse_window = std::make_shared<Window>(
-      kMouseCursorWidth, kMouseCursorHeight);
+      kMouseCursorWidth, kMouseCursorHeight, frame_buffer_config.pixel_format);
   mouse_window->SetTransparentColor(kMouseTransparentColor);
 
   printk("Draw mouse cursor...\n");
 
   DrawMouseCursor(mouse_window->Writer(), {0, 0});
 
+  printk("Create frame buffer...\n");
+
+  FrameBuffer screen;
+  if (auto err = screen.Initialize(frame_buffer_config))
+  {
+    printk("Failed to initialize frame buffer: %s at %s:%d\n", err.Name(), err.File(), err.Line());
+  }
+
   printk("Create layer manager...\n");
 
   layer_manager = new LayerManager;
-  layer_manager->SetWriter(pixel_writer);
+  layer_manager->SetFrameBuffer(&screen);
 
   auto bglayer_id = layer_manager->NewLayer()
                         .SetWindow(bgwindow)
