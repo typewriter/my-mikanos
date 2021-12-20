@@ -1,14 +1,16 @@
+#include "console.hpp"
+
 #include <cstring>
 
-#include "console.hpp"
 #include "fonts.hpp"
 #include "layer.hpp"
 
 Console::Console(const PixelColor &fg_color, const PixelColor &bg_color)
-    : fg_color_{fg_color}, bg_color_{bg_color},
-      buffer_{}, cursor_row_{0}, cursor_column_{0}
-{
-}
+    : fg_color_{fg_color},
+      bg_color_{bg_color},
+      buffer_{},
+      cursor_row_{0},
+      cursor_column_{0} {}
 
 void Console::PutString(const char *s)
 {
