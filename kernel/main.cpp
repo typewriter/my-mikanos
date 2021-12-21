@@ -83,15 +83,36 @@ void SwitchEhci2Xhci(const pci::Device &xhc_dev)
 // char mouse_cursor_buf[sizeof(MouseCursor)];
 // MouseCursor *mouse_cursor;
 unsigned int mouse_layer_id;
+Vector2D<int> screen_size;
+Vector2D<int> mouse_position;
+
+template <typename T>
+Vector2D<T> ElementMin(Vector2D<T> a, Vector2D<T> b)
+{
+  return Vector2D<T>{std::min(a.x, b.x), std::min(a.y, b.y)};
+}
+
+template <typename T>
+Vector2D<T> ElementMax(Vector2D<T> a, Vector2D<T> b)
+{
+  return Vector2D<T>{std::max(a.x, b.x), std::max(a.y, b.y)};
+}
 
 void MouseObserver(int8_t displacement_x, int8_t displacement_y)
 {
-  layer_manager->MoveRelative(mouse_layer_id, {displacement_x, displacement_y});
-  StartLAPICTimer();
+  auto newpos = mouse_position + Vector2D<int>{displacement_x, displacement_y};
+  newpos = ElementMin(newpos, screen_size + Vector2D<int>{-1, -1});
+  mouse_position = ElementMax(newpos, {0, 0});
+
+  layer_manager->Move(mouse_layer_id, mouse_position);
   layer_manager->Draw();
-  auto elapsed = LAPICTimerElapsed();
-  StopLAPICTimer();
-  printk("MouseObserver: elapsed = %u\n", elapsed);
+
+  // layer_manager->MoveRelative(mouse_layer_id, {displacement_x, displacement_y});
+  // StartLAPICTimer();
+  // layer_manager->Draw();
+  // auto elapsed = LAPICTimerElapsed();
+  // StopLAPICTimer();
+  // printk("MouseObserver: elapsed = %u\n", elapsed);
   // mouse_cursor->MoveRelative({displacement_x, displacement_y});
 }
 
@@ -140,6 +161,9 @@ extern "C" void KernelMainNewStack(
     pixel_writer = new (pixel_writer_buf) BGRResv8BitPerColorPixelWriter{frame_buffer_config};
     break;
   }
+
+  screen_size.x = frame_buffer_config.horizontal_resolution;
+  screen_size.y = frame_buffer_config.vertical_resolution;
 
   DrawDesktop(*pixel_writer);
 
