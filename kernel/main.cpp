@@ -337,7 +337,7 @@ extern "C" void KernelMainNewStack(
   printk("Draw desktop using bgwriter...\n");
 
   DrawDesktop(*bgwriter);
-  console->SetWriter(bgwriter);
+  console->SetWindow(bgwindow);
 
   printk("Using bgwriter...\n");
 
