@@ -5,6 +5,8 @@
 #include "graphics.hpp"
 #include "frame_buffer.hpp"
 
+void DrawWindow(PixelWriter &writer, const char *title);
+
 class Window
 {
 public:

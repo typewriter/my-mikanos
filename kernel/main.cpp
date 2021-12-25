@@ -381,22 +381,27 @@ extern "C" void KernelMainNewStack(
     printk("Failed to initialize frame buffer: %s at %s:%d\n", err.Name(), err.File(), err.Line());
   }
 
+  printk("Create window...\n");
+
+  auto main_window = std::make_shared<Window>(160, 68, frame_buffer_config.pixel_format);
+  DrawWindow(*main_window->Writer(), "Hello Window");
+  WriteString(*main_window->Writer(), {24, 28}, "Welcome to", {0, 0, 0});
+  WriteString(*main_window->Writer(), {24, 44}, "My-MikanOS world!", {0, 0, 255});
+
   printk("Create layer manager...\n");
 
   layer_manager = new LayerManager;
   layer_manager->SetFrameBuffer(&screen);
 
-  auto bglayer_id = layer_manager->NewLayer()
-                        .SetWindow(bgwindow)
-                        .Move({0, 0})
-                        .ID();
-  mouse_layer_id = layer_manager->NewLayer()
-                       .SetWindow(mouse_window)
-                       .Move({200, 200})
-                       .ID();
+  auto bglayer_id =
+      layer_manager->NewLayer().SetWindow(bgwindow).Move({0, 0}).ID();
+  mouse_layer_id =
+      layer_manager->NewLayer().SetWindow(mouse_window).Move({200, 200}).ID();
+  auto main_window_layer_id = layer_manager->NewLayer().SetWindow(main_window).Move({300, 100}).ID();
 
   layer_manager->UpDown(bglayer_id, 0);
   layer_manager->UpDown(mouse_layer_id, 1);
+  layer_manager->UpDown(main_window_layer_id, 1);
 
   printk("Draw from layer manager...");
 
