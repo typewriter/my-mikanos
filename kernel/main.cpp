@@ -395,10 +395,8 @@ extern "C" void KernelMainNewStack(
 
   printk("Create window...\n");
 
-  auto main_window = std::make_shared<Window>(160, 68, frame_buffer_config.pixel_format);
+  auto main_window = std::make_shared<Window>(160, 52, frame_buffer_config.pixel_format);
   DrawWindow(*main_window->Writer(), "Hello Window");
-  WriteString(*main_window->Writer(), {24, 28}, "Welcome to", {0, 0, 0});
-  WriteString(*main_window->Writer(), {24, 44}, "My-MikanOS world!", {0, 0, 255});
 
   printk("Create layer manager...\n");
 
@@ -421,6 +419,9 @@ extern "C" void KernelMainNewStack(
 
   printk("Drawing?");
 
+  char str[128];
+  unsigned int count = 0;
+
   // 割り込み処理
   std::array<Message, 32> main_queue_data;
   ArrayQueue<Message> main_queue{main_queue_data};
@@ -428,6 +429,12 @@ extern "C" void KernelMainNewStack(
 
   while (true)
   {
+    ++count;
+    sprintf(str, "%010u", count);
+    FillRectangle(*main_window->Writer(), {24, 28}, {8 * 10, 16}, {0xc6, 0xc6, 0xc6});
+    WriteString(*main_window->Writer(), {24, 28}, str, {0, 0, 0});
+    layer_manager->Draw();
+
     __asm__("cli");
     if (main_queue.Count() == 0)
     {
