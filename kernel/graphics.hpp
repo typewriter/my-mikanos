@@ -51,7 +51,7 @@ class PixelWriter
 {
 public:
     virtual ~PixelWriter() = default;
-    virtual void Write(int x, int y, const PixelColor &c) = 0;
+    virtual void Write(Vector2D<int> pos, const PixelColor &c) = 0;
     virtual int Width() const = 0;
     virtual int Height() const = 0;
 };
@@ -78,14 +78,14 @@ class RGBResv8BitPerColorPixelWriter : public FrameBufferWriter
 {
 public:
     using FrameBufferWriter::FrameBufferWriter;
-    virtual void Write(int x, int y, const PixelColor &c) override;
+    virtual void Write(Vector2D<int> pos, const PixelColor &c) override;
 };
 
 class BGRResv8BitPerColorPixelWriter : public FrameBufferWriter
 {
 public:
     using FrameBufferWriter::FrameBufferWriter;
-    virtual void Write(int x, int y, const PixelColor &c) override;
+    virtual void Write(Vector2D<int> pos, const PixelColor &c) override;
 };
 
 void FillRectangle(PixelWriter &writer, const Vector2D<int> &pos,

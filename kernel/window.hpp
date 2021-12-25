@@ -12,9 +12,9 @@ public:
     {
     public:
         WindowWriter(Window &window) : window_{window} {}
-        virtual void Write(int x, int y, const PixelColor &c) override
+        virtual void Write(Vector2D<int> pos, const PixelColor &c) override
         {
-            window_.Write(x, y, c);
+            window_.Write(pos, c);
         }
 
         virtual int Width() const override { return window_.Width(); }
@@ -33,7 +33,7 @@ public:
     void SetTransparentColor(std::optional<PixelColor> c);
     WindowWriter *Writer();
 
-    void Write(int x, int y, PixelColor c);
+    void Write(Vector2D<int> pos, PixelColor c);
     PixelColor &At(int x, int y);
     void Move(Vector2D<int> dst_pos, const Rectangle<int> &src);
     const PixelColor &At(int x, int y) const;
