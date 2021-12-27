@@ -19,6 +19,7 @@ public:
             window_.Write(pos, c);
         }
 
+        // virtual Vector2D<int> Size() const override { return {window_.Width(), window_.Height()}; }
         virtual int Width() const override { return window_.Width(); }
         virtual int Height() const override { return window_.Height(); }
 
@@ -31,7 +32,7 @@ public:
     Window(const Window &rhs) = delete;
     Window &operator=(const Window &rhs) = delete;
 
-    void DrawTo(FrameBuffer &screen, Vector2D<int> position);
+    void DrawTo(FrameBuffer &screen, Vector2D<int> position, const Rectangle<int> &area);
     void SetTransparentColor(std::optional<PixelColor> c);
     WindowWriter *Writer();
 
@@ -40,6 +41,7 @@ public:
     void Move(Vector2D<int> dst_pos, const Rectangle<int> &src);
     const PixelColor &At(int x, int y) const;
 
+    Vector2D<int> Size() const;
     int Width() const;
     int Height() const;
 

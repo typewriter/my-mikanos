@@ -31,7 +31,7 @@ void Console::PutString(const char *s)
     }
     if (layer_manager)
     {
-        layer_manager->Draw();
+        layer_manager->Draw(layer_id_);
     }
 }
 
@@ -103,4 +103,14 @@ void Console::Refresh()
     {
         WriteString(*writer_, {0, 16 * row}, buffer_[row], fg_color_);
     }
+}
+
+void Console::SetLayerID(unsigned int layer_id)
+{
+    layer_id_ = layer_id;
+}
+
+unsigned int Console::LayerID() const
+{
+    return layer_id_;
 }

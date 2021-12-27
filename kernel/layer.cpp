@@ -19,6 +19,11 @@ std::shared_ptr<Window> Layer::GetWindow() const
     return window_;
 }
 
+Vector2D<int> Layer::GetPosition()
+{
+    return pos_;
+}
+
 Layer &Layer::Move(Vector2D<int> pos)
 {
     pos_ = pos;
@@ -31,11 +36,11 @@ Layer &Layer::MoveRelative(Vector2D<int> pos_diff)
     return *this;
 }
 
-void Layer::DrawTo(FrameBuffer &buffer) const
+void Layer::DrawTo(FrameBuffer &buffer, const Rectangle<int> &area) const
 {
     if (window_)
     {
-        window_->DrawTo(buffer, pos_);
+        window_->DrawTo(buffer, pos_, area);
     }
 }
 
@@ -67,7 +72,12 @@ Layer *LayerManager::FindLayer(unsigned int id)
 
 void LayerManager::Move(unsigned int id, Vector2D<int> new_position)
 {
-    FindLayer(id)->Move(new_position);
+    auto layer = FindLayer(id);
+    const auto window_size = layer->GetWindow()->Size();
+    const auto old_pos = layer->GetPosition();
+    layer->Move(new_position);
+    Draw({old_pos, window_size});
+    Draw(id);
 }
 
 void LayerManager::MoveRelative(unsigned int id, Vector2D<int> pos_diff)
@@ -75,11 +85,30 @@ void LayerManager::MoveRelative(unsigned int id, Vector2D<int> pos_diff)
     FindLayer(id)->MoveRelative(pos_diff);
 }
 
-void LayerManager::Draw() const
+void LayerManager::Draw(const Rectangle<int> &area) const
 {
     for (auto layer : layer_stack_)
     {
-        layer->DrawTo(*screen_);
+        layer->DrawTo(*screen_, area);
+    }
+}
+
+void LayerManager::Draw(unsigned int id) const
+{
+    bool draw = false;
+    Rectangle<int> window_area;
+    for (auto layer : layer_stack_)
+    {
+        if (layer->ID() == id)
+        {
+            draw = true;
+        }
+        if (draw)
+        {
+            window_area.size = layer->GetWindow()->Size();
+            window_area.pos = layer->GetPosition();
+            layer->DrawTo(*screen_, window_area);
+        }
     }
 }
 

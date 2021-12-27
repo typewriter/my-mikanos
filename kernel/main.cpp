@@ -87,18 +87,6 @@ unsigned int mouse_layer_id;
 Vector2D<int> screen_size;
 Vector2D<int> mouse_position;
 
-template <typename T>
-Vector2D<T> ElementMin(Vector2D<T> a, Vector2D<T> b)
-{
-  return Vector2D<T>{std::min(a.x, b.x), std::min(a.y, b.y)};
-}
-
-template <typename T>
-Vector2D<T> ElementMax(Vector2D<T> a, Vector2D<T> b)
-{
-  return Vector2D<T>{std::max(a.x, b.x), std::max(a.y, b.y)};
-}
-
 void MouseObserver(int8_t displacement_x, int8_t displacement_y)
 {
   auto newpos = mouse_position + Vector2D<int>{displacement_x, displacement_y};
@@ -106,7 +94,7 @@ void MouseObserver(int8_t displacement_x, int8_t displacement_y)
   mouse_position = ElementMax(newpos, {0, 0});
 
   layer_manager->Move(mouse_layer_id, mouse_position);
-  layer_manager->Draw();
+  layer_manager->Draw(mouse_layer_id);
 
   // layer_manager->MoveRelative(mouse_layer_id, {displacement_x, displacement_y});
   // StartLAPICTimer();
@@ -372,7 +360,7 @@ extern "C" void KernelMainNewStack(
   printk("Draw desktop using bgwriter...\n");
 
   DrawDesktop(*bgwriter);
-  console->SetWindow(bgwindow);
+  // console->SetWindow(bgwindow);
 
   printk("Using bgwriter...\n");
 
@@ -409,13 +397,19 @@ extern "C" void KernelMainNewStack(
       layer_manager->NewLayer().SetWindow(mouse_window).Move({200, 200}).ID();
   auto main_window_layer_id = layer_manager->NewLayer().SetWindow(main_window).Move({300, 100}).ID();
 
+  auto console_window = std::make_shared<Window>(
+      Console::kColumns * 8, Console::kRows * 16, frame_buffer_config.pixel_format);
+  console->SetWindow(console_window);
+  console->SetLayerID(layer_manager->NewLayer().SetWindow(console_window).Move({0, 0}).ID());
+
   layer_manager->UpDown(bglayer_id, 0);
-  layer_manager->UpDown(mouse_layer_id, 1);
-  layer_manager->UpDown(main_window_layer_id, 1);
+  layer_manager->UpDown(console->LayerID(), 1);
+  layer_manager->UpDown(mouse_layer_id, 2);
+  layer_manager->UpDown(main_window_layer_id, 2);
 
-  printk("Draw from layer manager...");
+  printk("Draw from layer manager... ");
 
-  layer_manager->Draw();
+  // layer_manager->Draw({{0, 0}, screen_size});
 
   printk("Drawing?");
 
@@ -433,7 +427,8 @@ extern "C" void KernelMainNewStack(
     sprintf(str, "%010u", count);
     FillRectangle(*main_window->Writer(), {24, 28}, {8 * 10, 16}, {0xc6, 0xc6, 0xc6});
     WriteString(*main_window->Writer(), {24, 28}, str, {0, 0, 0});
-    layer_manager->Draw();
+    layer_manager->Draw(main_window_layer_id);
+    printk("Write...\n");
 
     __asm__("cli");
     if (main_queue.Count() == 0)
