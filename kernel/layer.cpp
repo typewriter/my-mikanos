@@ -86,7 +86,12 @@ void LayerManager::Move(unsigned int id, Vector2D<int> new_position)
 
 void LayerManager::MoveRelative(unsigned int id, Vector2D<int> pos_diff)
 {
-    FindLayer(id)->MoveRelative(pos_diff);
+    auto layer = FindLayer(id);
+    const auto window_size = layer->GetWindow()->Size();
+    const auto old_pos = layer->GetPosition();
+    layer->MoveRelative(pos_diff);
+    Draw({old_pos, window_size});
+    Draw(id);
 }
 
 void LayerManager::Draw(const Rectangle<int> &area) const
