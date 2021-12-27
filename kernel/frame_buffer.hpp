@@ -16,6 +16,8 @@ public:
 
     FrameBufferWriter &Writer() { return *writer_; }
 
+    FrameBufferConfig Config() const;
+
 private:
     FrameBufferConfig config_{};
     std::vector<uint8_t> buffer_{};

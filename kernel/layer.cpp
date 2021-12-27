@@ -47,6 +47,10 @@ void Layer::DrawTo(FrameBuffer &buffer, const Rectangle<int> &area) const
 void LayerManager::SetFrameBuffer(FrameBuffer *buffer)
 {
     screen_ = buffer;
+
+    FrameBufferConfig back_config = buffer->Config();
+    back_config.frame_buffer = nullptr;
+    back_buffer_.Initialize(back_config);
 }
 
 Layer &LayerManager::NewLayer()
@@ -89,8 +93,9 @@ void LayerManager::Draw(const Rectangle<int> &area) const
 {
     for (auto layer : layer_stack_)
     {
-        layer->DrawTo(*screen_, area);
+        layer->DrawTo(back_buffer_, area);
     }
+    screen_->Copy(area.pos, back_buffer_, area);
 }
 
 void LayerManager::Draw(unsigned int id) const
@@ -101,15 +106,16 @@ void LayerManager::Draw(unsigned int id) const
     {
         if (layer->ID() == id)
         {
+            window_area.size = layer->GetWindow()->Size();
+            window_area.pos = layer->GetPosition();
             draw = true;
         }
         if (draw)
         {
-            window_area.size = layer->GetWindow()->Size();
-            window_area.pos = layer->GetPosition();
-            layer->DrawTo(*screen_, window_area);
+            layer->DrawTo(back_buffer_, window_area);
         }
     }
+    screen_->Copy(window_area.pos, back_buffer_, window_area);
 }
 
 void LayerManager::Hide(unsigned int id)

@@ -130,6 +130,11 @@ void FrameBuffer::Move(Vector2D<int> dst_pos, const Rectangle<int> &src)
     }
 }
 
+FrameBufferConfig FrameBuffer::Config() const
+{
+    return config_;
+}
+
 int BitsPerPixel(PixelFormat format)
 {
     switch (format)
