@@ -114,3 +114,7 @@ unsigned int Console::LayerID() const
 {
     return layer_id_;
 }
+
+void InitializeConsole()
+{
+}

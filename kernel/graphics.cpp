@@ -69,3 +69,40 @@ void DrawDesktop(PixelWriter &writer)
 
     WriteString(writer, {width - 56, height - 24}, "22:30", {255, 255, 255});
 }
+
+Vector2D<int> screen_size;
+
+char pixel_writer_buf[sizeof(RGBResv8BitPerColorPixelWriter)];
+PixelWriter *pixel_writer;
+FrameBufferConfig frame_buffer_config;
+
+void InitializeGraphics(const FrameBufferConfig &frame_buffer_config_ref)
+{
+    frame_buffer_config = FrameBufferConfig{frame_buffer_config_ref};
+    switch (frame_buffer_config.pixel_format)
+    {
+    case kPixelRGBResv8BitPerColor:
+        pixel_writer = new (pixel_writer_buf)
+            RGBResv8BitPerColorPixelWriter{frame_buffer_config};
+        break;
+    case kPixelBGRResv8BitPerColor:
+        pixel_writer = new (pixel_writer_buf)
+            BGRResv8BitPerColorPixelWriter{frame_buffer_config};
+        break;
+    }
+
+    screen_size.x = frame_buffer_config.horizontal_resolution;
+    screen_size.y = frame_buffer_config.vertical_resolution;
+
+    DrawDesktop(*pixel_writer);
+}
+
+FrameBufferConfig GetFrameBufferConfig()
+{
+    return frame_buffer_config;
+}
+
+PixelWriter *GetPixelWriter()
+{
+    return pixel_writer;
+}

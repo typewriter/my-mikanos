@@ -30,9 +30,6 @@
 
 void operator delete(void *obj) noexcept {}
 
-char pixel_writer_buf[sizeof(RGBResv8BitPerColorPixelWriter)];
-PixelWriter *pixel_writer;
-
 char console_buf[sizeof(Console)];
 Console *console;
 
@@ -84,7 +81,6 @@ void SwitchEhci2Xhci(const pci::Device &xhc_dev)
 // char mouse_cursor_buf[sizeof(MouseCursor)];
 // MouseCursor *mouse_cursor;
 unsigned int mouse_layer_id;
-Vector2D<int> screen_size;
 Vector2D<int> mouse_position;
 
 void MouseObserver(uint8_t buttons, int8_t displacement_x, int8_t displacement_y)
@@ -94,7 +90,8 @@ void MouseObserver(uint8_t buttons, int8_t displacement_x, int8_t displacement_y
 
   const auto oldpos = mouse_position;
   auto newpos = mouse_position + Vector2D<int>{displacement_x, displacement_y};
-  newpos = ElementMin(newpos, screen_size + Vector2D<int>{-1, -1});
+  // FIXME: なおす (day11a)
+  // newpos = ElementMin(newpos, screen_size + Vector2D<int>{-1, -1});
   mouse_position = ElementMax(newpos, {0, 0});
 
   const auto posdiff = mouse_position - oldpos;
@@ -162,28 +159,30 @@ extern "C" void KernelMainNewStack(
     const FrameBufferConfig &frame_buffer_config_ref,
     const MemoryMap &memory_map_ref)
 {
-  // コンソール表示
-  FrameBufferConfig frame_buffer_config{frame_buffer_config_ref};
   MemoryMap memory_map{memory_map_ref};
-  switch (frame_buffer_config.pixel_format)
-  {
-  case kPixelRGBResv8BitPerColor:
-    pixel_writer = new (pixel_writer_buf)
-        RGBResv8BitPerColorPixelWriter{frame_buffer_config};
-    break;
-  case kPixelBGRResv8BitPerColor:
-    pixel_writer = new (pixel_writer_buf)
-        BGRResv8BitPerColorPixelWriter{frame_buffer_config};
-    break;
-  }
 
-  screen_size.x = frame_buffer_config.horizontal_resolution;
-  screen_size.y = frame_buffer_config.vertical_resolution;
+  InitializeGraphics(frame_buffer_config_ref);
+  InitializeConsole();
 
-  DrawDesktop(*pixel_writer);
+  // InitializeSegmentation();
+  // InitializePaging();
+  // InitializeMemorymanager(memory_map);
+  // ::main_queue = new std::deque<Message>(32);
+  // InitializeInterrupt(main_queue);
+
+  // InitializePCI();
+  // usb:xhci::Initialize();
+
+  // INitializeLayer();
+  // InitializeMainWindow();
+  // InitializeMouse();
+  // layer_manager->Draw({{0,0},ScreenSize()});
+
+  // コンソール表示
+  // DrawDesktop(*pixel_writer);
 
   console = new (console_buf) Console{kDesktopFGColor, kDesktopBGColor};
-  console->SetWriter(pixel_writer);
+  console->SetWriter(GetPixelWriter());
 
   printk("Konnichiwa!\n");
   InitializeLAPICTimer();
@@ -372,13 +371,13 @@ extern "C" void KernelMainNewStack(
   // デスクトップ描画
   printk("Start desktop drawing...\n");
 
-  const int kFrameWidth = frame_buffer_config.horizontal_resolution;
-  const int kFrameHeight = frame_buffer_config.vertical_resolution;
+  const int kFrameWidth = GetFrameBufferConfig().horizontal_resolution;
+  const int kFrameHeight = GetFrameBufferConfig().vertical_resolution;
 
   printk("Make shared window...\n");
 
   auto bgwindow = std::make_shared<Window>(kFrameWidth, kFrameHeight,
-                                           frame_buffer_config.pixel_format);
+                                           GetFrameBufferConfig().pixel_format);
   auto bgwriter = bgwindow->Writer();
 
   printk("Draw desktop using bgwriter...\n");
@@ -389,7 +388,7 @@ extern "C" void KernelMainNewStack(
   printk("Using bgwriter...\n");
 
   auto mouse_window = std::make_shared<Window>(
-      kMouseCursorWidth, kMouseCursorHeight, frame_buffer_config.pixel_format);
+      kMouseCursorWidth, kMouseCursorHeight, GetFrameBufferConfig().pixel_format);
   mouse_window->SetTransparentColor(kMouseTransparentColor);
 
   printk("Draw mouse cursor...\n");
@@ -399,7 +398,7 @@ extern "C" void KernelMainNewStack(
   printk("Create frame buffer...\n");
 
   FrameBuffer screen;
-  if (auto err = screen.Initialize(frame_buffer_config))
+  if (auto err = screen.Initialize(GetFrameBufferConfig()))
   {
     printk("Failed to initialize frame buffer: %s at %s:%d\n", err.Name(),
            err.File(), err.Line());
@@ -407,7 +406,7 @@ extern "C" void KernelMainNewStack(
 
   printk("Create window...\n");
 
-  auto main_window = std::make_shared<Window>(160, 52, frame_buffer_config.pixel_format);
+  auto main_window = std::make_shared<Window>(160, 52, GetFrameBufferConfig().pixel_format);
   DrawWindow(*main_window->Writer(), "Hello Window");
 
   printk("Create layer manager...\n");
@@ -422,7 +421,7 @@ extern "C" void KernelMainNewStack(
   auto main_window_layer_id = layer_manager->NewLayer().SetWindow(main_window).SetDraggable(true).Move({300, 100}).ID();
 
   auto console_window = std::make_shared<Window>(
-      Console::kColumns * 8, Console::kRows * 16, frame_buffer_config.pixel_format);
+      Console::kColumns * 8, Console::kRows * 16, GetFrameBufferConfig().pixel_format);
   console->SetWindow(console_window);
   console->SetLayerID(layer_manager->NewLayer().SetWindow(console_window).Move({0, 0}).ID());
 

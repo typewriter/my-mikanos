@@ -26,3 +26,5 @@ private:
     int cursor_row_, cursor_column_;
     int layer_id_;
 };
+
+void InitializeConsole();
