@@ -108,7 +108,7 @@ void MouseObserver(uint8_t buttons, int8_t displacement_x, int8_t displacement_y
   {
     // ボタンが押された
     auto layer = layer_manager->FindLayerByPosition(mouse_position, mouse_layer_id);
-    if (layer)
+    if (layer && layer->IsDraggable())
     {
       mouse_drag_layer_id = layer->ID();
     }
@@ -419,7 +419,7 @@ extern "C" void KernelMainNewStack(
       layer_manager->NewLayer().SetWindow(bgwindow).Move({0, 0}).ID();
   mouse_layer_id =
       layer_manager->NewLayer().SetWindow(mouse_window).Move({200, 200}).ID();
-  auto main_window_layer_id = layer_manager->NewLayer().SetWindow(main_window).Move({300, 100}).ID();
+  auto main_window_layer_id = layer_manager->NewLayer().SetWindow(main_window).SetDraggable(true).Move({300, 100}).ID();
 
   auto console_window = std::make_shared<Window>(
       Console::kColumns * 8, Console::kRows * 16, frame_buffer_config.pixel_format);

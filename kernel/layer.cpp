@@ -19,7 +19,7 @@ std::shared_ptr<Window> Layer::GetWindow() const
     return window_;
 }
 
-Vector2D<int> Layer::GetPosition()
+Vector2D<int> Layer::GetPosition() const
 {
     return pos_;
 }
@@ -42,6 +42,17 @@ void Layer::DrawTo(FrameBuffer &buffer, const Rectangle<int> &area) const
     {
         window_->DrawTo(buffer, pos_, area);
     }
+}
+
+Layer &Layer::SetDraggable(bool draggable)
+{
+    draggable_ = draggable;
+    return *this;
+}
+
+bool Layer::IsDraggable() const
+{
+    return draggable_;
 }
 
 void LayerManager::SetFrameBuffer(FrameBuffer *buffer)
