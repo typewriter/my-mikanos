@@ -36,3 +36,5 @@ void SetDataSegment(SegmentDescriptor &desc,
                     uint32_t limit);
 
 void SetupSegments();
+
+void InitializeSegmentation();

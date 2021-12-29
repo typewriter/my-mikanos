@@ -4,6 +4,7 @@
 #include <limits>
 #include <array>
 #include "error.hpp"
+#include "memory_map.hpp"
 
 namespace
 {
@@ -65,3 +66,4 @@ private:
 };
 
 Error InitializeHeap(BitmapMemoryManager &memory_manager);
+void InitializeMemoryManager(MemoryMap memory_map);

@@ -28,3 +28,5 @@ private:
 };
 
 void InitializeConsole();
+int printk(const char *format, ...);
+Console &GetConsole();

@@ -2,7 +2,16 @@
 
 #include <array>
 #include <cstdint>
+#include <deque>
 #include "x86_descriptor.hpp"
+
+struct Message
+{
+    enum Type
+    {
+        kInterruptXHCI,
+    } type;
+};
 
 union InterruptDescriptorAttribute
 {
@@ -64,3 +73,6 @@ struct InterruptFrame
     uint64_t rsp;
     uint64_t ss;
 };
+
+extern std::deque<Message> *main_queue;
+void InitializeInterrupt(std::deque<Message> *main_queue);

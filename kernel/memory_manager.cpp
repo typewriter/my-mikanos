@@ -1,4 +1,5 @@
 #include "memory_manager.hpp"
+#include "console.hpp"
 
 BitmapMemoryManager::BitmapMemoryManager()
     : alloc_map_{}, range_begin_{FrameID{0}}, range_end_{FrameID{kFrameCount}}
@@ -94,4 +95,49 @@ Error InitializeHeap(BitmapMemoryManager &memory_manager)
     program_break = reinterpret_cast<caddr_t>(heap_start.value.ID() * kBytesPerFrame);
     program_break_end = program_break + kHeapFrames * kBytesPerFrame;
     return MAKE_ERROR(Error::kSuccess);
+}
+
+char memory_manager_buf[sizeof(BitmapMemoryManager)];
+BitmapMemoryManager *memory_manager;
+
+void InitializeMemoryManager(MemoryMap memory_map)
+{
+    ::memory_manager = new (memory_manager_buf) BitmapMemoryManager;
+
+    const auto memory_map_base = reinterpret_cast<uintptr_t>(memory_map.buffer);
+    uintptr_t available_end = 0;
+    for (uintptr_t iter = memory_map_base;
+         iter < memory_map_base + memory_map.map_size;
+         iter += memory_map.descriptor_size)
+    {
+        auto desc = reinterpret_cast<const MemoryDescriptor *>(iter);
+        if (available_end < desc->physical_start)
+        {
+            memory_manager->MarkAllocated(
+                FrameID{available_end / kBytesPerFrame},
+                (desc->physical_start - available_end) / kBytesPerFrame);
+        }
+
+        const auto physical_end =
+            desc->physical_start + desc->number_of_pages * kUEFIPageSize;
+        if (IsAvailable(static_cast<MemoryType>(desc->type)))
+        {
+            available_end = physical_end;
+        }
+        else
+        {
+            memory_manager->MarkAllocated(
+                FrameID{desc->physical_start / kBytesPerFrame},
+                desc->number_of_pages * kUEFIPageSize / kBytesPerFrame);
+        }
+    }
+    memory_manager->SetMemoryRange(FrameID{1},
+                                   FrameID{available_end / kBytesPerFrame});
+
+    if (auto err = InitializeHeap(*memory_manager))
+    {
+        printk("Failed to allocate pages: %s at %s:%d\n", err.Name(), err.File(),
+               err.Line());
+        exit(1);
+    }
 }

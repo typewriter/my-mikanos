@@ -115,6 +115,30 @@ unsigned int Console::LayerID() const
     return layer_id_;
 }
 
+char console_buf[sizeof(Console)];
+Console *console;
+
 void InitializeConsole()
 {
+    console = new (console_buf) Console{kDesktopFGColor, kDesktopBGColor};
+    console->SetWriter(GetPixelWriter());
+}
+
+int printk(const char *format, ...)
+{
+    va_list ap;
+    int result;
+    char s[1024];
+
+    va_start(ap, format);
+    result = vsprintf(s, format, ap);
+    va_end(ap);
+
+    console->PutString(s);
+    return result;
+}
+
+Console &GetConsole()
+{
+    return *console;
 }
