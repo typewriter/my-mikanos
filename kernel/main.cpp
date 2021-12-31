@@ -74,8 +74,8 @@ extern "C" void KernelMainNewStack(
   InitializeSegmentation();
   InitializePaging();
   InitializeMemoryManager(memory_map);
-  main_queue = new std::deque<Message>(32);
-  InitializeInterrupt(main_queue);
+  msg_queue = new std::deque<Message>(32);
+  InitializeInterrupt(msg_queue);
 
   InitializePCI();
   usb::xhci::Initialize();
@@ -88,7 +88,6 @@ extern "C" void KernelMainNewStack(
   // コンソール表示
   // DrawDesktop(*pixel_writer);
 
-  printk("Konnichiwa!\n");
   InitializeLAPICTimer();
 
   // USB デバイスの検索、マウス操作反映
@@ -144,20 +143,23 @@ extern "C" void KernelMainNewStack(
     printk("Write...\n");
 
     __asm__("cli");
-    if (main_queue->size() == 0)
+    if (msg_queue->size() == 0)
     {
       __asm__("sti\n\thlt");
       continue;
     }
 
-    Message msg = main_queue->front();
-    main_queue->pop_front();
+    Message msg = msg_queue->front();
+    msg_queue->pop_front();
     __asm__("sti");
 
     switch (msg.type)
     {
     case Message::kInterruptXHCI:
       usb::xhci::ProcessEvents();
+      break;
+    case Message::kInterruptLAPICTimer:
+      printk("Timer interrupt!!!!");
       break;
     default:
       printk("Unknown message type: %d\n", msg.type);

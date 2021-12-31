@@ -10,6 +10,7 @@ struct Message
     enum Type
     {
         kInterruptXHCI,
+        kInterruptLAPICTimer,
     } type;
 };
 
@@ -62,6 +63,7 @@ public:
     enum Number
     {
         kXHCI = 0x40,
+        kLAPICTimer = 0x41,
     };
 };
 
@@ -74,5 +76,5 @@ struct InterruptFrame
     uint64_t ss;
 };
 
-extern std::deque<Message> *main_queue;
-void InitializeInterrupt(std::deque<Message> *main_queue);
+extern std::deque<Message> *msg_queue;
+void InitializeInterrupt(std::deque<Message> *msg_queue);
