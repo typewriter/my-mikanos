@@ -1,4 +1,5 @@
 #include "layer.hpp"
+#include "console.hpp"
 #include <algorithm>
 
 Layer::Layer(unsigned int id) : id_{id} {}
@@ -202,4 +203,42 @@ Layer *LayerManager::FindLayerByPosition(Vector2D<int> pos, unsigned int exclude
     return *it;
 }
 
+FrameBuffer screen;
 LayerManager *layer_manager;
+std::shared_ptr<Window> desktop_window;
+
+void InitializeLayer() {
+    // デスクトップ描画
+    desktop_window = std::make_shared<Window>(
+        GetFrameBufferConfig().horizontal_resolution,
+        GetFrameBufferConfig().vertical_resolution,
+        GetFrameBufferConfig().pixel_format);
+    auto desktopWriter = desktop_window->Writer();
+    DrawDesktop(*desktopWriter);
+
+    if (auto err = screen.Initialize(GetFrameBufferConfig()))
+    {
+        printk("Failed to initialize frame buffer: %s at %s:%d\n", err.Name(),
+               err.File(), err.Line());
+    }
+
+    // コンソールのウィンドウ化
+    auto console_window = std::make_shared<Window>(
+        Console::kColumns * 8, Console::kRows * 16, GetFrameBufferConfig().pixel_format);
+    GetConsole().SetWindow(console_window);
+
+    // レイヤ生成
+    layer_manager = new LayerManager;
+    layer_manager->SetFrameBuffer(&screen);
+
+    auto desktop_layer_id =
+        layer_manager->NewLayer().SetWindow(GetBgWindow()).Move({0, 0}).ID();
+    GetConsole().SetLayerID(layer_manager->NewLayer().SetWindow(console_window).Move({0, 0}).ID());
+
+    layer_manager->UpDown(desktop_layer_id, 0);
+    layer_manager->UpDown(GetConsole().LayerID(), 1);
+}
+
+std::shared_ptr<Window> GetBgWindow() {
+    return desktop_window;
+}

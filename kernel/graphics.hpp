@@ -133,3 +133,5 @@ void DrawDesktop(PixelWriter &writer);
 void InitializeGraphics(const FrameBufferConfig &frame_buffer_config_ref);
 FrameBufferConfig GetFrameBufferConfig();
 PixelWriter *GetPixelWriter();
+
+Vector2D<int> ScreenSize();

@@ -106,3 +106,7 @@ PixelWriter *GetPixelWriter()
 {
     return pixel_writer;
 }
+
+Vector2D<int> ScreenSize() {
+    return screen_size;
+}

@@ -57,3 +57,6 @@ private:
 };
 
 extern LayerManager *layer_manager;
+
+void InitializeLayer();
+std::shared_ptr<Window> GetBgWindow();

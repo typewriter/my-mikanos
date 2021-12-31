@@ -1,6 +1,7 @@
 #include "window.hpp"
 #include "fonts.hpp"
 #include "logger.hpp"
+#include "layer.hpp"
 
 namespace
 {
@@ -165,4 +166,15 @@ int Window::Width() const
 int Window::Height() const
 {
     return height_;
+}
+
+std::shared_ptr<Window> main_window;
+unsigned int main_window_layer_id;
+
+void InitializeMainWindow() {
+  main_window = std::make_shared<Window>(160, 52, GetFrameBufferConfig().pixel_format);
+  DrawWindow(*main_window->Writer(), "Hello Window");
+
+  auto main_window_layer_id = layer_manager->NewLayer().SetWindow(main_window).SetDraggable(true).Move({300, 100}).ID();
+  layer_manager->UpDown(main_window_layer_id, 2);
 }

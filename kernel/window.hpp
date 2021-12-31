@@ -53,3 +53,8 @@ private:
 
     FrameBuffer shadow_buffer_{};
 };
+
+extern std::shared_ptr<Window> main_window;
+extern unsigned int main_window_layer_id;
+
+void InitializeMainWindow();
