@@ -131,16 +131,18 @@ extern "C" void KernelMainNewStack(
   printk("Drawing?");
 
   char str[128];
-  unsigned int count = 0;
+  // unsigned int count = 0;
 
   while (true)
   {
-    ++count;
-    sprintf(str, "%010u", count);
+    // ++count;
+    __asm__("cli");
+    const auto tick = timer_manager->CurrentTick();
+    __asm__("sti");
+    sprintf(str, "%010lu", tick);
     FillRectangle(*main_window->Writer(), {24, 28}, {8 * 10, 16}, {0xc6, 0xc6, 0xc6});
     WriteString(*main_window->Writer(), {24, 28}, str, {0, 0, 0});
     layer_manager->Draw(main_window_layer_id);
-    printk("Write...\n");
 
     __asm__("cli");
     if (msg_queue->size() == 0)
@@ -158,9 +160,9 @@ extern "C" void KernelMainNewStack(
     case Message::kInterruptXHCI:
       usb::xhci::ProcessEvents();
       break;
-    case Message::kInterruptLAPICTimer:
-      printk("Timer interrupt!!!!");
-      break;
+    // case Message::kInterruptLAPICTimer:
+    //   printk("Timer interrupt!!!!");
+    //   break;
     default:
       printk("Unknown message type: %d\n", msg.type);
     }

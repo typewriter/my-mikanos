@@ -1,5 +1,6 @@
 #include <array>
 #include "interrupt.hpp"
+#include "timer.hpp"
 #include "asmfunc.h"
 
 std::array<InterruptDescriptor, 256> idt;
@@ -31,7 +32,8 @@ __attribute__((interrupt)) void IntHandlerXHCI(InterruptFrame *frame)
 
 __attribute__((interrupt)) void IntHandlerLAPICTimer(InterruptFrame *frame)
 {
-    msg_queue->push_back(Message{Message::kInterruptLAPICTimer});
+    // msg_queue->push_back(Message{Message::kInterruptLAPICTimer});
+    LAPICTimerOnInterrupt();
     NotifyEndOfInterrupt();
 }
 
