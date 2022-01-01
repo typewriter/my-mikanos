@@ -88,54 +88,14 @@ extern "C" void KernelMainNewStack(
   // コンソール表示
   // DrawDesktop(*pixel_writer);
 
-  InitializeLAPICTimer();
-
-  // USB デバイスの検索、マウス操作反映
-
-
-  // const std::array available_memory_types{
-  //     MemoryType::kEfiBootServicesCode,
-  //     MemoryType::kEfiBootServicesData,
-  //     MemoryType::kEfiConventionalMemory,
-  // };
-
-  // printk("Memory map: %p\n", &memory_map);
-  // for (uintptr_t iter = reinterpret_cast<uintptr_t>(memory_map.buffer);
-  //      iter < reinterpret_cast<uintptr_t>(memory_map.buffer) +
-  //      memory_map.map_size; iter += memory_map.descriptor_size)
-  // {
-  //   auto desc = reinterpret_cast<MemoryDescriptor *>(iter);
-  //   for (int i = 0; i < available_memory_types.size(); ++i)
-  //   {
-  //     if (desc->type == available_memory_types[i])
-  //     {
-  //       printk("type = %u, phys = %08lx, pages = %lu, attr = %08lx\n",
-  //              desc->type,
-  //              desc->physical_start,
-  //              desc->physical_start + desc->number_of_pages * 4096 - 1,
-  //              desc->number_of_pages,
-  //              desc->attribute);
-  //     }
-  //   }
-  // }
-
-  printk("Using bgwriter...\n");
-
-  printk("Create layer manager...\n");
-
-
-  printk("Draw from layer manager... ");
-
-  // layer_manager->Draw({{0, 0}, screen_size});
-
-  printk("Drawing?");
+  InitializeLAPICTimer(*msg_queue);
+  timer_manager->AddTimer(Timer(200, 2));
+  timer_manager->AddTimer(Timer(600,-1));
 
   char str[128];
-  // unsigned int count = 0;
 
   while (true)
   {
-    // ++count;
     __asm__("cli");
     const auto tick = timer_manager->CurrentTick();
     __asm__("sti");
@@ -160,9 +120,12 @@ extern "C" void KernelMainNewStack(
     case Message::kInterruptXHCI:
       usb::xhci::ProcessEvents();
       break;
-    // case Message::kInterruptLAPICTimer:
-    //   printk("Timer interrupt!!!!");
-    //   break;
+    case Message::kTimerTimeout:
+      printk("Timer timeout: timeout(%lu), value(%d)\n", msg.arg.timer.timeout, msg.arg.timer.value);
+      if (msg.arg.timer.value > 0) {
+        timer_manager->AddTimer(Timer(msg.arg.timer.timeout + 100, msg.arg.timer.value + 1));
+      }
+      break;
     default:
       printk("Unknown message type: %d\n", msg.type);
     }
