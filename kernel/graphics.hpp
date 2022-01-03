@@ -135,3 +135,5 @@ FrameBufferConfig GetFrameBufferConfig();
 PixelWriter *GetPixelWriter();
 
 Vector2D<int> ScreenSize();
+
+PixelColor ToColor(uint32_t c);

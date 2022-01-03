@@ -58,3 +58,4 @@ extern std::shared_ptr<Window> main_window;
 extern unsigned int main_window_layer_id;
 
 void InitializeMainWindow();
+void DrawTextbox(PixelWriter& writer, Vector2D<int> pos, Vector2D<int> size);
