@@ -6,9 +6,9 @@
 #include <interrupt.hpp>
 
 void InitializeLAPICTimer(std::deque<Message>& msg_queue);
-// void StartLAPICTimer();
-// uint32_t LAPICTimerElapsed();
-// void StopLAPICTimer();
+void StartLAPICTimer();
+uint32_t LAPICTimerElapsed();
+void StopLAPICTimer();
 void LAPICTimerOnInterrupt();
 
 class Timer {
@@ -41,3 +41,5 @@ class TimerManager {
 };
 
 extern TimerManager* timer_manager;
+extern unsigned long lapic_timer_freq;
+const int kTimerFreq = 100;

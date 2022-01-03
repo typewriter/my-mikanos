@@ -1,5 +1,7 @@
 #include "acpi.hpp"
+#include "console.hpp"
 #include "logger.hpp"
+#include "asmfunc.h"
 #include <cstdlib>
 #include <cstring>
 
@@ -68,6 +70,8 @@ namespace acpi
     return (this->header.length - sizeof(DescriptionHeader)) / sizeof(uint64_t);
   }
 
+  const FADT* fadt;
+
   void Initialize(const acpi::RSDP &rsdp)
   {
     if (!rsdp.IsValid())
@@ -75,8 +79,6 @@ namespace acpi
       Log(kError, "RSDP is not valid\n");
       exit(1);
     }
-
-    const FADT *fadt;
 
     const XSDT& xsdt = *reinterpret_cast<const XSDT*>(rsdp.xsdt_address);
     if (!xsdt.header.IsValid("XSDT")) {
@@ -97,5 +99,29 @@ namespace acpi
       Log(kError, "FADT is not found\n");
       exit(1);
     }
+  }
+
+  void WaitMilliseconds(unsigned long msec) {
+    // TMR_VAL_EXT (https://uefi.org/specs/ACPI/6.4/05_ACPI_Software_Programming_Model/ACPI_Software_Programming_Model.html#fixed-acpi-description-table-fixed-feature-flags)
+    const bool pm_timer_32 = (fadt->flags >> 8) & 1;
+    const uint32_t start = IoIn32(fadt->pm_tmr_blk);
+    // (オーバーフローしても勝手に切り捨てられる)
+    uint32_t end = start + kPMTimerFreq * msec / 1000;
+    if (!pm_timer_32) {
+      // タイマーは 24bit なので上位 8 ビットは捨てる
+      end &= 0x00ffffffu;
+    }
+
+    printk("PM_TMR_BLK address: %lu\n", fadt->pm_tmr_blk);
+    printk("Start Wait while loop... from %lu to %lu\n", start, end);
+    
+    for (int i = 0; i < 20; ++i) {
+      printk("PM_TMR_BLK value: %lu\n", IoIn32(fadt->pm_tmr_blk));
+    }
+
+    if (end < start) { // overflow
+      while (IoIn32(fadt->pm_tmr_blk) >= start);
+    }
+    while (IoIn32(fadt->pm_tmr_blk) < end);
   }
 }

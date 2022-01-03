@@ -52,6 +52,9 @@ namespace acpi
   } __attribute__((packed));
 
   extern const FADT* fadt;
+  // 3.579545 MHz
+  const uint32_t kPMTimerFreq = 3579545;
 
   void Initialize(const RSDP &rsdp);
+  void WaitMilliseconds(unsigned long msec);
 }
