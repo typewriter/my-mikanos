@@ -6,6 +6,7 @@
 
 #include "asmfunc.h"
 #include "console.hpp"
+#include "clock.hpp"
 #include "error.hpp"
 #include "fonts.hpp"
 #include "frame_buffer_config.hpp"
@@ -95,17 +96,19 @@ extern "C" void KernelMainNewStack(
   timer_manager->AddTimer(Timer(200, 2));
   timer_manager->AddTimer(Timer(600,-1));
 
-  char str[128];
+  InitializeClock();
+
+  // char str[128];
 
   while (true)
   {
-    __asm__("cli");
-    const auto tick = timer_manager->CurrentTick();
-    __asm__("sti");
-    sprintf(str, "%010lu", tick);
-    FillRectangle(*main_window->Writer(), {24, 28}, {8 * 10, 16}, {0xc6, 0xc6, 0xc6});
-    WriteString(*main_window->Writer(), {24, 28}, str, {0, 0, 0});
-    layer_manager->Draw(main_window_layer_id);
+    // __asm__("cli");
+    // const auto tick = timer_manager->CurrentTick();
+    // __asm__("sti");
+    // sprintf(str, "%010lu", tick);
+    // FillRectangle(*main_window->Writer(), {24, 28}, {8 * 10, 16}, {0xc6, 0xc6, 0xc6});
+    // WriteString(*main_window->Writer(), {24, 28}, str, {0, 0, 0});
+    // layer_manager->Draw(main_window_layer_id);
 
     __asm__("cli");
     if (msg_queue->size() == 0)
@@ -127,6 +130,7 @@ extern "C" void KernelMainNewStack(
       printk("Timer timeout: timeout(%lu), value(%d)\n", msg.arg.timer.timeout, msg.arg.timer.value);
       if (msg.arg.timer.value > 0) {
         timer_manager->AddTimer(Timer(msg.arg.timer.timeout + 100, msg.arg.timer.value + 1));
+        DrawClock(*clock_window->Writer());
       }
       break;
     default:

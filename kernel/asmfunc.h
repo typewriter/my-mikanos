@@ -12,4 +12,8 @@ extern "C"
     void SetDSAll(uint16_t value);
     void SetCSSS(uint16_t cs, uint16_t ss);
     void SetCR3(uint64_t value);
+    // I/O 書き込み
+    void IoOutb(uint8_t port, uint8_t data);
+    // I/O 読み込み
+    uint8_t IoInb(uint8_t port);
 }

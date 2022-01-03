@@ -81,3 +81,16 @@ global SetCR3  ; void SetCR3(uint64_t value);
 SetCR3:
     mov cr3, rdi
     ret
+
+global IoOutb ; void IoOutb(uint8_t port, uint8_t data);
+IoOutb:
+    mov dx, di; dx = port
+    mov ax, si; ax = data
+    out dx, al; Out AL to i/o port DX
+    ret
+
+global IoInb ; void IoInb(uint8_t port);
+IoInb:
+    mov dx, di; dx = port
+    in al, dx; Read from i/o port DX to AL 
+    ret
