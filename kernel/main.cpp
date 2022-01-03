@@ -10,6 +10,7 @@
 #include "error.hpp"
 #include "fonts.hpp"
 #include "frame_buffer_config.hpp"
+#include "keyboard.hpp"
 #include "graphics.hpp"
 #include "interrupt.hpp"
 #include "layer.hpp"
@@ -86,6 +87,7 @@ extern "C" void KernelMainNewStack(
   InitializeLayer();
   InitializeMainWindow();
   InitializeMouse();
+  InitializeKeyboard(*msg_queue);
   layer_manager->Draw({{0,0},ScreenSize()});
 
   // コンソール表示
@@ -127,10 +129,15 @@ extern "C" void KernelMainNewStack(
       usb::xhci::ProcessEvents();
       break;
     case Message::kTimerTimeout:
-      printk("Timer timeout: timeout(%lu), value(%d)\n", msg.arg.timer.timeout, msg.arg.timer.value);
+      // printk("Timer timeout: timeout(%lu), value(%d)\n", msg.arg.timer.timeout, msg.arg.timer.value);
       if (msg.arg.timer.value > 0) {
         timer_manager->AddTimer(Timer(msg.arg.timer.timeout + 100, msg.arg.timer.value + 1));
         DrawClock(*clock_window->Writer());
+      }
+      break;
+    case Message::kKeyPush:
+      if (msg.arg.keyboard.ascii != 0) {
+        printk("%c", msg.arg.keyboard.ascii);
       }
       break;
     default:
