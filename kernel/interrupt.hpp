@@ -93,3 +93,4 @@ struct InterruptFrame
 
 extern std::deque<Message> *msg_queue;
 void InitializeInterrupt(std::deque<Message> *msg_queue);
+void NotifyEndOfInterrupt();

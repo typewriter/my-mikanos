@@ -22,6 +22,7 @@
 #include "pci.hpp"
 #include "queue.hpp"
 #include "segment.hpp"
+#include "task.hpp"
 #include "timer.hpp"
 #include "usb/classdriver/mouse.hpp"
 #include "usb/xhci/xhci.hpp"
@@ -131,31 +132,22 @@ void InitializeTaskBWindow() {
   layer_manager->UpDown(task_b_window_layer_id, std::numeric_limits<int>::max());
 }
 
-struct TaskContext {
-  uint64_t cr3, rip, rflags, reserved1; // offset 0x00
-  uint64_t cs, ss, fs, gs; // offset 0x20
-  uint64_t rax, rbx, rcx, rdx, rdi, rsi, rsp, rbp; // offset 0x40
-  uint64_t r8, r9, r10, r11, r12, r13, r14, r15; // offset 0x80
-  std::array<uint8_t, 512> fxsave_area; // offset 0xc0
-} __attribute__((packed));
-
-alignas(16) TaskContext task_b_ctx, task_a_ctx;
-
 void TaskB(int task_id, int data) {
   printk("TaskB: task_id=%d, data=%d\n", task_id, data);
   char str[128];
   int count = 0;
   while(true) {
     ++count;
-    printk("Draw TaskB window...\n");
+    __asm__("hlt");
+    // printk("Draw TaskB window...\n");
     sprintf(str, "%010d", count);
     FillRectangle(*task_b_window->Writer(), {24, 28}, {8*10, 16}, {0xc6, 0xc6, 0xc6});
     WriteString(*task_b_window->Writer(), {24, 28}, str, {0, 0, 0});
     layer_manager->Draw(task_b_window_layer_id);
 
-    printk("Switch context to TaskMain...\n");
-    SwitchContext(&task_a_ctx, &task_b_ctx);
-    printk("Restore context TaskB\n");
+    // printk("Switch context to TaskMain...\n");
+    // SwitchContext(&task_a_ctx, &task_b_ctx);
+    // printk("Restore context TaskB\n");
   }
 }
 
@@ -217,7 +209,7 @@ extern "C" void KernelMainNewStack(
   memset(&task_b_ctx, 0, sizeof(task_b_ctx));
   task_b_ctx.rip = reinterpret_cast<uint64_t>(TaskB);
   task_b_ctx.rdi = 1;
-  task_b_ctx.rsi = 42;
+  task_b_ctx.rsi = 43;
 
   task_b_ctx.cr3 = GetCR3();
   task_b_ctx.rflags = 0x202;
@@ -227,6 +219,8 @@ extern "C" void KernelMainNewStack(
 
   // MXCSR のすべての例外をマスクする
   *reinterpret_cast<uint32_t*>(&task_b_ctx.fxsave_area[24]) = 0x1f80;
+
+  InitializeTask();
 
   char str[128];
 
@@ -243,11 +237,11 @@ extern "C" void KernelMainNewStack(
     __asm__("cli");
     if (msg_queue->size() == 0)
     {
-      // __asm__("sti\n\thlt");
-      __asm__("sti");
-      printk("Switch context to TaskB...\n");
-      SwitchContext(&task_b_ctx, &task_a_ctx);
-      printk("Restore context TaskMain\n");
+      __asm__("sti\n\thlt");
+      // __asm__("sti");
+      // printk("Switch context to TaskB...\n");
+      // SwitchContext(&task_b_ctx, &task_a_ctx);
+      // printk("Restore context TaskMain\n");
       continue;
     }
 
