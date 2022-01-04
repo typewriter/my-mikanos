@@ -7,6 +7,7 @@ extern "C"
     void IoOut32(uint16_t addr, uint32_t data);
     uint32_t IoIn32(uint16_t addr);
     uint16_t GetCS(void);
+    uint64_t GetCR3();
     void LoadIDT(uint16_t limit, uint64_t offset);
     void LoadGDT(uint16_t limit, uint64_t offset);
     void SetDSAll(uint16_t value);
@@ -16,4 +17,6 @@ extern "C"
     void IoOutb(uint8_t port, uint8_t data);
     // I/O 読み込み
     uint8_t IoInb(uint8_t port);
+
+    void SwitchContext(void* next_ctx, void* current_ctx);
 }

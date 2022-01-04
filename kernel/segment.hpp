@@ -38,3 +38,6 @@ void SetDataSegment(SegmentDescriptor &desc,
 void SetupSegments();
 
 void InitializeSegmentation();
+
+const uint16_t kKernelCS = 1 << 3;
+const uint16_t kKernelSS = 2 << 3;
