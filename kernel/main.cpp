@@ -80,6 +80,12 @@ void InitializeTextWindow() {
 }
 
 int text_window_index;
+void DrawTextCursor(bool visible) {
+  const auto color = visible ? ToColor(0) : ToColor(0xffffff);
+  const auto pos = Vector2D<int>{8 + 8*text_window_index, 24+5};
+  FillRectangle(*text_window->Writer(), pos, {7, 15}, color);
+}
+
 void InputTextWindow(char c) {
   if (c == 0) {
     return;
@@ -89,11 +95,15 @@ void InputTextWindow(char c) {
 
   const int max_chars = (text_window->Width() - 16) / 8;
   if (c == '\b' && text_window_index > 0) {
+    DrawTextCursor(false);
     --text_window_index;
     FillRectangle(*text_window->Writer(), pos(), {8,16}, ToColor(0xffffff));
+    DrawTextCursor(true);
   } else if(c >= ' ' && text_window_index < max_chars) {
+    DrawTextCursor(false);
     WriteAscii(*text_window->Writer(), pos().x, pos().y, c, ToColor(0));
     ++text_window_index;
+    DrawTextCursor(true);
   }
   layer_manager->Draw(text_window_layer_id);
 }
@@ -140,6 +150,13 @@ extern "C" void KernelMainNewStack(
 
   InitializeClock();
 
+  const int kTextboxCursorTimer = -5;
+  const int kTimer500ms = static_cast<int>(kTimerFreq * 0.5);
+  __asm__("cli");
+  timer_manager->AddTimer(Timer{kTimer500ms, kTextboxCursorTimer});
+  __asm__("sti");
+  bool textbox_cursor_visible = false;
+
   // char str[128];
 
   while (true)
@@ -173,6 +190,15 @@ extern "C" void KernelMainNewStack(
       if (msg.arg.timer.value > 0) {
         timer_manager->AddTimer(Timer(msg.arg.timer.timeout + 100, msg.arg.timer.value + 1));
         DrawClock(*clock_window->Writer());
+      }
+      if (msg.arg.timer.value == kTextboxCursorTimer) {
+        __asm__("cli");
+        timer_manager->AddTimer(
+            Timer{msg.arg.timer.timeout + kTimer500ms, kTextboxCursorTimer});
+        __asm__("sti");
+        textbox_cursor_visible = !textbox_cursor_visible;
+        DrawTextCursor(textbox_cursor_visible);
+        layer_manager->Draw(text_window_layer_id);
       }
       break;
     case Message::kKeyPush:
