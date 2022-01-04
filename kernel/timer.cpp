@@ -2,6 +2,7 @@
 #include "task.hpp"
 #include "console.hpp"
 #include "timer.hpp"
+#include "task.hpp"
 #include "interrupt.hpp"
 #include <limits>
 
@@ -101,6 +102,6 @@ void LAPICTimerOnInterrupt() {
     NotifyEndOfInterrupt();
 
     if (task_timer_timeout) {
-        SwitchTask();
+        task_manager->SwitchTask();
     }
 }
