@@ -1,4 +1,6 @@
 #include "keyboard.hpp"
+#include "console.hpp"
+#include "task.hpp"
 #include "usb/classdriver/keyboard.hpp"
 
 const int kLControlBitMask = 0b00000001u;
@@ -42,10 +44,11 @@ const char keycode_map_shifted[256] = {
   '8', '9', '0', '.', '\\', 0, 0, '=', // 96
 };
 
-void InitializeKeyboard(std::deque<Message>& msg_queue)
+void InitializeKeyboard()
 {
   usb::HIDKeyboardDriver::default_observer =
-    [&msg_queue](uint8_t modifier, uint8_t keycode) {
+    [](uint8_t modifier, uint8_t keycode) {
+      // printk("Input keyboard!! %d\n", keycode);
       const bool shift = (modifier & (kLShiftBitMask | kRShiftBitMask)) != 0;
       char ascii = keycode_map[keycode];
       if (shift) {
@@ -55,6 +58,6 @@ void InitializeKeyboard(std::deque<Message>& msg_queue)
       msg.arg.keyboard.modifier = modifier;
       msg.arg.keyboard.keycode = keycode;
       msg.arg.keyboard.ascii = ascii;
-      msg_queue.push_back(msg);
+      task_manager->SendMessage(1, msg);
     };
 }

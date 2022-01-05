@@ -2,6 +2,7 @@
 #include "interrupt.hpp"
 #include "timer.hpp"
 #include "asmfunc.h"
+#include "task.hpp"
 
 std::array<InterruptDescriptor, 256> idt;
 
@@ -22,24 +23,20 @@ void NotifyEndOfInterrupt()
     *end_of_interrupt = 0;
 }
 
-std::deque<Message> *msg_queue;
-
 __attribute__((interrupt)) void IntHandlerXHCI(InterruptFrame *frame)
 {
-    msg_queue->push_back(Message{Message::kInterruptXHCI});
+    task_manager->SendMessage(1, Message{Message::kInterruptXHCI});
     NotifyEndOfInterrupt();
 }
 
 __attribute__((interrupt)) void IntHandlerLAPICTimer(InterruptFrame *frame)
 {
-    // msg_queue->push_back(Message{Message::kInterruptLAPICTimer});
     LAPICTimerOnInterrupt();
     NotifyEndOfInterrupt();
 }
 
-void InitializeInterrupt(std::deque<Message> *msg_queue)
+void InitializeInterrupt()
 {
-    ::msg_queue = msg_queue;
     const uint16_t cs = GetCS();
 
     SetIDTEntry(

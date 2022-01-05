@@ -3,6 +3,7 @@
 #include "timer.hpp"
 #include "segment.hpp"
 #include <cstring>
+#include <optional>
 
 alignas(16) TaskContext task_b_ctx, task_a_ctx;
 TaskManager* task_manager;
@@ -57,6 +58,24 @@ Task& Task::Wakeup()
   return *this;
 }
 
+void Task::SendMessage(const Message& msg)
+{
+  msgs_.push_back(msg);
+  Wakeup();
+}
+
+std::optional<Message> Task::ReceiveMessage()
+{
+  if (msgs_.empty())
+  {
+    return std::nullopt;
+  }
+
+  auto m = msgs_.front();
+  msgs_.pop_front();
+  return m;
+}
+
 TaskManager::TaskManager()
 {
   running_.push_back(&NewTask());
@@ -80,6 +99,25 @@ void TaskManager::SwitchTask(bool current_sleep)
   Task* next_task = running_.front();
 
   SwitchContext(&next_task->Context(), &current_task->Context());
+}
+
+Task& TaskManager::CurrentTask()
+{
+  return *running_.front();
+}
+
+Error TaskManager::SendMessage(uint64_t id, const Message& msg)
+{
+  auto it = std::find_if(tasks_.begin(), tasks_.end(),
+    [id](const auto& t){ return t->ID() == id; });
+  
+  if (it == tasks_.end())
+  {
+    return MAKE_ERROR(Error::kNoSuchTask);
+  }
+
+  (*it)->SendMessage(msg);
+  return MAKE_ERROR(Error::kSuccess);
 }
 
 void TaskManager::Sleep(Task* task) 

@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <deque>
+#include <optional>
 
 #include "asmfunc.h"
 #include "console.hpp"
@@ -176,24 +177,20 @@ extern "C" void KernelMainNewStack(
   InitializeSegmentation();
   InitializePaging();
   InitializeMemoryManager(memory_map);
-  msg_queue = new std::deque<Message>(32);
-  InitializeInterrupt(msg_queue);
+  InitializeInterrupt();
 
   InitializePCI();
-  usb::xhci::Initialize();
 
   InitializeLayer();
   InitializeMainWindow();
-  InitializeMouse();
   InitializeTextWindow();
-  InitializeKeyboard(*msg_queue);
   layer_manager->Draw({{0,0},ScreenSize()});
 
   // コンソール表示
   // DrawDesktop(*pixel_writer);
 
   acpi::Initialize(acpi_table);
-  InitializeLAPICTimer(*msg_queue);
+  InitializeLAPICTimer();
   timer_manager->AddTimer(Timer(200, 2));
   timer_manager->AddTimer(Timer(600,-1));
 
@@ -227,6 +224,7 @@ extern "C" void KernelMainNewStack(
 
   InitializeTaskBWindow();
   InitializeTask();
+  Task& main_task = task_manager->CurrentTask();
   const uint64_t taskb_id = 
     task_manager->NewTask()
     .InitContext(TaskB, 45)
@@ -234,6 +232,10 @@ extern "C" void KernelMainNewStack(
     .ID();
   task_manager->NewTask().InitContext(TaskIdle, 0xdeadbeef).Wakeup();
   task_manager->NewTask().InitContext(TaskIdle, 0xcafebabe).Wakeup();
+
+  usb::xhci::Initialize();
+  InitializeMouse();
+  InitializeKeyboard();
 
   char str[128];
 
@@ -248,35 +250,44 @@ extern "C" void KernelMainNewStack(
     layer_manager->Draw(main_window_layer_id);
 
     __asm__("cli");
-    if (msg_queue->size() == 0)
+    std::optional<Message> msg = main_task.ReceiveMessage();
+    if (!msg)
     {
-      __asm__("sti\n\thlt");
-      // __asm__("sti");
-      // printk("Switch context to TaskB...\n");
-      // SwitchContext(&task_b_ctx, &task_a_ctx);
-      // printk("Restore context TaskMain\n");
+      main_task.Sleep();
+      __asm__("sti");
       continue;
     }
 
-    Message msg = msg_queue->front();
-    msg_queue->pop_front();
+    // __asm__("cli");
+    // if (msg_queue->size() == 0)
+    // {
+    //   __asm__("sti\n\thlt");
+    //   // __asm__("sti");
+    //   // printk("Switch context to TaskB...\n");
+    //   // SwitchContext(&task_b_ctx, &task_a_ctx);
+    //   // printk("Restore context TaskMain\n");
+    //   continue;
+    // }
+
+    // Message msg = msg_queue->front();
+    // msg_queue->pop_front();
     __asm__("sti");
 
-    switch (msg.type)
+    switch (msg->type)
     {
     case Message::kInterruptXHCI:
       usb::xhci::ProcessEvents();
       break;
     case Message::kTimerTimeout:
-      // printk("Timer timeout: timeout(%lu), value(%d)\n", msg.arg.timer.timeout, msg.arg.timer.value);
-      if (msg.arg.timer.value > 0) {
-        timer_manager->AddTimer(Timer(msg.arg.timer.timeout + 100, msg.arg.timer.value + 1));
+      // printk("Timer timeout: timeout(%lu), value(%d)\n", msg->arg.timer.timeout, msg->arg.timer.value);
+      if (msg->arg.timer.value > 0) {
+        timer_manager->AddTimer(Timer(msg->arg.timer.timeout + 100, msg->arg.timer.value + 1));
         DrawClock(*clock_window->Writer());
       }
-      if (msg.arg.timer.value == kTextboxCursorTimer) {
+      if (msg->arg.timer.value == kTextboxCursorTimer) {
         __asm__("cli");
         timer_manager->AddTimer(
-            Timer{msg.arg.timer.timeout + kTimer500ms, kTextboxCursorTimer});
+            Timer{msg->arg.timer.timeout + kTimer500ms, kTextboxCursorTimer});
         __asm__("sti");
         textbox_cursor_visible = !textbox_cursor_visible;
         DrawTextCursor(textbox_cursor_visible);
@@ -287,17 +298,17 @@ extern "C" void KernelMainNewStack(
       // if (msg.arg.keyboard.ascii != 0) {
       //   printk("%c", msg.arg.keyboard.ascii);
       // }
-      InputTextWindow(msg.arg.keyboard.ascii);
-      if (msg.arg.keyboard.ascii == 's')
+      InputTextWindow(msg->arg.keyboard.ascii);
+      if (msg->arg.keyboard.ascii == 's')
       {
         printk("Sleep TaskB: %s\n", task_manager->Sleep(taskb_id).Name());
-      } else if (msg.arg.keyboard.ascii == 'w')
+      } else if (msg->arg.keyboard.ascii == 'w')
       {
         printk("Wakeup TaskB: %s\n", task_manager->Wakeup(taskb_id).Name());
       }
       break;
     default:
-      printk("Unknown message type: %d\n", msg.type);
+      printk("Unknown message type: %d\n", msg->type);
     }
   }
 

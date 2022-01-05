@@ -63,6 +63,7 @@ unsigned int mouse_layer_id;
 
 void MouseObserver(uint8_t buttons, int8_t displacement_x, int8_t displacement_y)
 {
+  // printk("Mouse observer!\n");
   static unsigned int mouse_drag_layer_id = 0;
   static uint8_t previous_buttons = 0;
 
@@ -114,7 +115,7 @@ void InitializeMouse() {
     printk("Draw mouse cursor...\n");
 
     DrawMouseCursor(mouse_window->Writer(), {0, 0});
-    layer_manager->UpDown(mouse_layer_id, 3);
+    layer_manager->UpDown(mouse_layer_id, std::numeric_limits<int>::max());
 
     usb::HIDMouseDriver::default_observer = MouseObserver;
 }
