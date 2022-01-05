@@ -152,12 +152,6 @@ void TaskB(uint64_t task_id, int64_t data) {
   }
 }
 
-void TaskIdle(uint64_t task_id, int64_t data)
-{
-  printk("TaskIdle: task_id=%lu, data=%lx\n", task_id, data);
-  while (true) __asm__("hlt");
-}
-
 // char mouse_cursor_buf[sizeof(MouseCursor)];
 // MouseCursor *mouse_cursor;
 usb::xhci::Controller *xhc;
@@ -230,8 +224,6 @@ extern "C" void KernelMainNewStack(
     .InitContext(TaskB, 45)
     .Wakeup()
     .ID();
-  task_manager->NewTask().InitContext(TaskIdle, 0xdeadbeef).Wakeup();
-  task_manager->NewTask().InitContext(TaskIdle, 0xcafebabe).Wakeup();
 
   usb::xhci::Initialize();
   InitializeMouse();
