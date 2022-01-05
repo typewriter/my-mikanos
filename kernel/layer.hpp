@@ -4,6 +4,7 @@
 #include <vector>
 #include "graphics.hpp"
 #include "window.hpp"
+#include "interrupt.hpp"
 #include "frame_buffer.hpp"
 
 class Layer
@@ -60,3 +61,5 @@ extern LayerManager *layer_manager;
 
 void InitializeLayer();
 std::shared_ptr<Window> GetBgWindow();
+
+void ProcessLayerMessage(const Message& msg);
