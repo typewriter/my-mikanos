@@ -1,6 +1,7 @@
 #include "layer.hpp"
 #include "console.hpp"
 #include <algorithm>
+#include <iterator>
 
 Layer::Layer(unsigned int id) : id_{id} {}
 
@@ -177,6 +178,13 @@ void LayerManager::UpDown(unsigned int id, int new_height)
     layer_stack_.insert(new_pos, layer);
 }
 
+unsigned int LayerManager::GetHeight(unsigned int id)
+{
+    auto layer = FindLayer(id);
+    auto layer_pos = std::find(layer_stack_.begin(), layer_stack_.end(), layer);
+    return std::distance(layer_stack_.begin(), layer_pos);
+}
+
 Layer *LayerManager::FindLayerByPosition(Vector2D<int> pos, unsigned int exclude_id) const
 {
     auto pred = [pos, exclude_id](Layer *layer)
@@ -237,7 +245,48 @@ void InitializeLayer() {
 
     layer_manager->UpDown(desktop_layer_id, 0);
     layer_manager->UpDown(GetConsole().LayerID(), 1);
+
+    active_layer = new ActiveLayer(*layer_manager);
 }
+
+ActiveLayer::ActiveLayer(LayerManager& manager) : manager_{manager} {}
+
+void ActiveLayer::SetMouseLayer(unsigned int mouse_layer)
+{
+    mouse_layer_ = mouse_layer;
+}
+
+void ActiveLayer::Activate(unsigned int layer_id)
+{
+    if (active_layer_ == layer_id)
+    {
+        return;
+    }
+
+    if (active_layer_ > 0)
+    {
+        printk("Deactivate active layer %d...\n", active_layer_);
+        Layer* layer = manager_.FindLayer(active_layer_);
+        layer->GetWindow()->Deactivate();
+        manager_.Draw(active_layer_);
+    }
+
+    active_layer_ = layer_id;
+    if (active_layer_ > 0)
+    {
+        printk("Activate layer %d...\n", layer_id);
+        printk("  Find...\n");
+        Layer* layer = manager_.FindLayer(active_layer_);
+        printk("  Activate...\n");
+        layer->GetWindow()->Activate();
+        printk("  UpDown...\n");
+        manager_.UpDown(active_layer_, manager_.GetHeight(mouse_layer_) - 1);
+        printk("  Draw...\n");
+        manager_.Draw(active_layer_);
+    }
+}
+
+ActiveLayer* active_layer;
 
 std::shared_ptr<Window> GetBgWindow() {
     return desktop_window;

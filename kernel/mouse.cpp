@@ -86,7 +86,11 @@ void MouseObserver(uint8_t buttons, int8_t displacement_x, int8_t displacement_y
     auto layer = layer_manager->FindLayerByPosition(mouse_position, mouse_layer_id);
     if (layer && layer->IsDraggable())
     {
+      printk("Activate draggable layer %d\n", layer->ID());
       mouse_drag_layer_id = layer->ID();
+      active_layer->Activate(layer->ID());
+    } else {
+      active_layer->Activate(0);
     }
   }
   else if (previous_left_pressed && left_pressed)
@@ -118,4 +122,5 @@ void InitializeMouse() {
     layer_manager->UpDown(mouse_layer_id, std::numeric_limits<int>::max());
 
     usb::HIDMouseDriver::default_observer = MouseObserver;
+    active_layer->SetMouseLayer(mouse_layer_id);
 }

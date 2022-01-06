@@ -42,32 +42,10 @@ void DrawWindow(PixelWriter &writer, const char *title)
     fill_rect({win_w - 2, 1}, {1, win_h - 2}, 0x848484);
     fill_rect({win_w - 1, 0}, {1, win_h}, 0x000000);
     fill_rect({2, 2}, {win_w - 4, win_h - 4}, 0xc6c6c6);
-    fill_rect({3, 3}, {win_w - 6, 18}, 0x000084);
     fill_rect({1, win_h - 2}, {win_w - 2, 1}, 0x848484);
     fill_rect({0, win_h - 1}, {win_w, 1}, 0x000000);
 
-    WriteString(writer, {24, 4}, title, ToColor(0xffffff));
-
-    for (int y = 0; y < kCloseButtonHeight; ++y)
-    {
-        for (int x = 0; x < kCloseButtonWidth; ++x)
-        {
-            PixelColor c = ToColor(0xffffff);
-            if (close_button[y][x] == '@')
-            {
-                c = ToColor(0x000000);
-            }
-            else if (close_button[y][x] == '$')
-            {
-                c = ToColor(0x848484);
-            }
-            else if (close_button[y][x] == ':')
-            {
-                c = ToColor(0xc6c6c6);
-            }
-            writer.Write({win_w - 5 - kCloseButtonWidth + x, 5 + y}, c);
-        }
-    }
+    DrawWindowTitle(writer, title, false);
 }
 
 Window::Window(int width, int height, PixelFormat shadow_format) : width_{width}, height_{height}
@@ -161,6 +139,28 @@ int Window::Height() const
     return height_;
 }
 
+ToplevelWindow::ToplevelWindow(int width, int height, PixelFormat shadow_format, const std::string& title)
+    : Window{width, height, shadow_format}, title_{title}
+{
+    DrawWindow(*Writer(), title_.c_str());
+}
+
+void ToplevelWindow::Activate()
+{
+    Window::Activate();
+    DrawWindowTitle(*Writer(), title_.c_str(), true);
+}
+
+void ToplevelWindow::Deactivate()
+{
+    Window::Deactivate();
+    DrawWindowTitle(*Writer(), title_.c_str(), false);
+}
+
+Vector2D<int> ToplevelWindow::InnerSize() const {
+    return Size() - kTopLeftMargin - kBottomRightMargin;
+}
+
 void DrawTextbox(PixelWriter& writer, Vector2D<int> pos, Vector2D<int> size) {
     auto fill_rect = [&writer](Vector2D<int> pos, Vector2D<int> size, uint32_t c) {
         FillRectangle(writer, pos, size, ToColor(c));
@@ -173,13 +173,45 @@ void DrawTextbox(PixelWriter& writer, Vector2D<int> pos, Vector2D<int> size) {
     fill_rect(pos + Vector2D<int>{size.x, 0}, {1, size.y}, 0xc6c6c6);
 }
 
-std::shared_ptr<Window> main_window;
+std::shared_ptr<ToplevelWindow> main_window;
 unsigned int main_window_layer_id;
 
 void InitializeMainWindow() {
-  main_window = std::make_shared<Window>(160, 52, GetFrameBufferConfig().pixel_format);
-  DrawWindow(*main_window->Writer(), "Hello Window");
+  main_window = std::make_shared<ToplevelWindow>(160, 52, GetFrameBufferConfig().pixel_format, "Hello window");
+//   DrawWindow(*main_window->Writer(), "Hello Window");
 
   main_window_layer_id = layer_manager->NewLayer().SetWindow(main_window).SetDraggable(true).Move({300, 100}).ID();
   layer_manager->UpDown(main_window_layer_id, 2);
+}
+
+void DrawWindowTitle(PixelWriter& writer, const char* title, bool active)
+{
+    const auto win_w = writer.Width();
+    uint32_t bgcolor = 0x848484;
+    if (active)
+    {
+        bgcolor = 0x000084;
+    }
+
+    FillRectangle(writer, {3, 3}, {win_w - 6, 18}, ToColor(bgcolor));
+    WriteString(writer, {24, 4}, title, ToColor(0xffffff));
+
+    for (int y = 0; y < kCloseButtonHeight; ++y)
+    {
+        for (int x = 0; x < kCloseButtonWidth; ++x)
+        {
+            PixelColor c = ToColor(0xffffff);
+            if (close_button[y][x] == '@')
+            {
+                c = ToColor(0x000000);
+            } else if (close_button[y][x] == '$')
+            {
+                c = ToColor(0x848484);
+            } else if (close_button[y][x] == ':')
+            {
+                c = ToColor(0xc6c6c6);
+            }
+            writer.Write({win_w - 5 - kCloseButtonWidth + x, 5 + y}, c);
+        }
+    }
 }
