@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <vector>
+#include <map>
 #include "graphics.hpp"
 #include "window.hpp"
 #include "interrupt.hpp"
@@ -78,6 +79,7 @@ class ActiveLayer
 };
 
 extern ActiveLayer* active_layer;
+extern std::map<unsigned int, uint64_t>* layer_task_map;
 
 void InitializeLayer();
 std::shared_ptr<Window> GetBgWindow();

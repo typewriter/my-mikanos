@@ -257,6 +257,7 @@ void InitializeLayer() {
     layer_manager->UpDown(GetConsole().LayerID(), 1);
 
     active_layer = new ActiveLayer(*layer_manager);
+    // layer_task_map = &std::map<unsigned int, uint64_t>{};
 }
 
 ActiveLayer::ActiveLayer(LayerManager& manager) : manager_{manager} {}
@@ -297,6 +298,7 @@ void ActiveLayer::Activate(unsigned int layer_id)
 }
 
 ActiveLayer* active_layer;
+std::map<unsigned int, uint64_t>* layer_task_map;
 
 std::shared_ptr<Window> GetBgWindow() {
     return desktop_window;
