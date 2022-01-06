@@ -118,6 +118,11 @@ void LayerManager::Draw(const Rectangle<int> &area) const
 
 void LayerManager::Draw(unsigned int id) const
 {
+    Draw(id, {{0, 0}, {-1, -1}});
+}
+
+void LayerManager::Draw(unsigned int id, Rectangle<int> area) const
+{
     bool draw = false;
     Rectangle<int> window_area;
     for (auto layer : layer_stack_)
@@ -126,6 +131,11 @@ void LayerManager::Draw(unsigned int id) const
         {
             window_area.size = layer->GetWindow()->Size();
             window_area.pos = layer->GetPosition();
+            if (area.size.x >= 0 || area.size.y >= 0)
+            {
+                area.pos = area.pos + window_area.pos;
+                window_area = window_area & area;
+            }
             draw = true;
         }
         if (draw)
@@ -305,6 +315,9 @@ void ProcessLayerMessage(const Message& msg)
             break;
         case LayerOperation::Draw:
             layer_manager->Draw(arg.layer_id);
+            break;
+        case LayerOperation::DrawArea:
+            layer_manager->Draw(arg.layer_id, {{arg.x, arg.y}, {arg.w, arg.h}});
             break;
     }
 }

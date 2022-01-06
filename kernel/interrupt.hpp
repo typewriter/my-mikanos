@@ -6,7 +6,7 @@
 #include "x86_descriptor.hpp"
 
 enum class LayerOperation {
-    Move, MoveRelative, Draw
+    Move, MoveRelative, Draw, DrawArea
 };
 
 struct Message
@@ -40,6 +40,7 @@ struct Message
             LayerOperation op;
             unsigned int layer_id;
             int x, y;
+            int w, h;
         } layer;
     } arg;
 };
