@@ -139,7 +139,7 @@ void TaskManager::SwitchTask(bool current_sleep)
     {
       if (!running_[lv].empty())
       {
-        printk("Level changed: %d -> %d\n", current_level_, lv);
+        // printk("Level changed: %d -> %d\n", current_level_, lv);
         current_level_ = lv;
         break;
       }
