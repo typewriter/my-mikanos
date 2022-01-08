@@ -112,12 +112,12 @@ namespace acpi
       end &= 0x00ffffffu;
     }
 
-    printk("PM_TMR_BLK address: %lu\n", fadt->pm_tmr_blk);
-    printk("Start Wait while loop... from %lu to %lu\n", start, end);
+    // printk("PM_TMR_BLK address: %lu\n", fadt->pm_tmr_blk);
+    // printk("Start Wait while loop... from %lu to %lu\n", start, end);
     
-    for (int i = 0; i < 20; ++i) {
-      printk("PM_TMR_BLK value: %lu\n", IoIn32(fadt->pm_tmr_blk));
-    }
+    // for (int i = 0; i < 20; ++i) {
+      // printk("PM_TMR_BLK value: %lu\n", IoIn32(fadt->pm_tmr_blk));
+    // }
 
     if (end < start) { // overflow
       while (IoIn32(fadt->pm_tmr_blk) >= start);

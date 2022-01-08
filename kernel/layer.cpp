@@ -286,13 +286,9 @@ void ActiveLayer::Activate(unsigned int layer_id)
     if (active_layer_ > 0)
     {
         printk("Activate layer %d...\n", layer_id);
-        printk("  Find...\n");
         Layer* layer = manager_.FindLayer(active_layer_);
-        printk("  Activate...\n");
         layer->GetWindow()->Activate();
-        printk("  UpDown...\n");
         manager_.UpDown(active_layer_, manager_.GetHeight(mouse_layer_) - 1);
-        printk("  Draw...\n");
         manager_.Draw(active_layer_);
     }
 }
