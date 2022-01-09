@@ -10,6 +10,7 @@
 #include "console.hpp"
 #include "clock.hpp"
 #include "error.hpp"
+#include "fat.hpp"
 #include "fonts.hpp"
 #include "frame_buffer_config.hpp"
 #include "keyboard.hpp"
@@ -138,6 +139,7 @@ extern "C" void KernelMainNewStack(
   InitializeMemoryManager(memory_map);
   InitializeInterrupt();
 
+  fat::Initialize(volume_image);
   InitializePCI();
 
   InitializeLayer();
