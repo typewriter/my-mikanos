@@ -5,6 +5,7 @@
 #include <array>
 #include "graphics.hpp"
 #include "window.hpp"
+#include "fat.hpp"
 
 class Terminal
 {
@@ -34,6 +35,7 @@ private:
   void Print(char c);
   void Print(const char *s);
   void ExecuteLine();
+  void ExecuteFile(const fat::DirectoryEntry &file_entry);
 
   std::deque<std::array<char, kLineMax>> cmd_history_{};
   int cmd_history_index_{-1};
