@@ -47,6 +47,7 @@ namespace fat
   } __attribute__((packed));
 
   extern BPB *boot_volume_image;
+  extern unsigned long bytes_per_cluster;
 
   enum class Attribute : uint8_t
   {
@@ -74,15 +75,25 @@ namespace fat
     uint16_t dir_last_write_date;
     uint16_t dir_first_cluster_low_word;
     uint32_t dir_file_size;
+
+    uint32_t FirstCluster() const
+    {
+      return dir_first_cluster_low_word |
+             (static_cast<uint32_t>(dir_first_cluster_high_word) << 16);
+    }
   } __attribute__((packed));
 
   void Initialize(void *volume_image);
   uintptr_t GetClusterAddr(unsigned long cluster);
-  void ReadName(const DirectoryEntry& entry, char* base, char* ext);
+  void ReadName(const DirectoryEntry &entry, char *base, char *ext);
+  unsigned long NextCluster(unsigned long cluster);
+  DirectoryEntry *FindFile(const char *name, unsigned long directory_cluster = 0);
+
+  static const unsigned long kEndOfClusterchain = 0x0ffffffflu;
 
   template <class T>
-  T* GetSectorByCluster(unsigned long cluster)
+  T *GetSectorByCluster(unsigned long cluster)
   {
-    return reinterpret_cast<T*>(GetClusterAddr(cluster));
+    return reinterpret_cast<T *>(GetClusterAddr(cluster));
   }
 }

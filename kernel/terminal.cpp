@@ -9,23 +9,55 @@
 Terminal::Terminal()
 {
   window_ = std::make_shared<ToplevelWindow>(
-    kColumns * 8 + 8 + ToplevelWindow::kMarginX,
-    kRows * 16 + 8 + ToplevelWindow::kMarginY,
-    GetFrameBufferConfig().pixel_format,
-    "MyMikanTerm"
-  );
+      kColumns * 8 + 8 + ToplevelWindow::kMarginX,
+      kRows * 16 + 8 + ToplevelWindow::kMarginY,
+      GetFrameBufferConfig().pixel_format,
+      "MyMikanTerm");
   DrawTerminal(*window_->InnerWriter(), {0, 0}, window_->InnerSize());
 
   layer_id_ = layer_manager->NewLayer()
-    .SetWindow(window_)
-    .SetDraggable(true)
-    .ID();
+                  .SetWindow(window_)
+                  .SetDraggable(true)
+                  .ID();
 
   Print("> ");
   cmd_history_.resize(8);
 }
 
-void Terminal::Print(const char* s)
+void Terminal::Print(char c)
+{
+  auto newline = [this]()
+  {
+    cursor_.x = 0;
+    if (cursor_.y < kRows - 1)
+    {
+      ++cursor_.y;
+    }
+    else
+    {
+      Scroll1();
+    }
+  };
+
+  if (c == '\n')
+  {
+    newline();
+  }
+  else
+  {
+    WriteAscii(*window_->Writer(), CalcCursorPos(), c, {255, 255, 255});
+    if (cursor_.x == kColumns - 1)
+    {
+      newline();
+    }
+    else
+    {
+      ++cursor_.x;
+    }
+  }
+}
+
+void Terminal::Print(const char *s)
 {
   DrawCursor(false);
 
@@ -87,12 +119,11 @@ Vector2D<int> Terminal::CalcCursorPos() const
 }
 
 Rectangle<int> Terminal::InputKey(
-  uint8_t modifier, uint8_t keycode, char ascii
-)
+    uint8_t modifier, uint8_t keycode, char ascii)
 {
   DrawCursor(false);
 
-  Rectangle<int> draw_area{CalcCursorPos(), {8*2, 16}};
+  Rectangle<int> draw_area{CalcCursorPos(), {8 * 2, 16}};
 
   if (ascii == '\n')
   {
@@ -108,7 +139,8 @@ Rectangle<int> Terminal::InputKey(
     if (cursor_.y < kRows - 1)
     {
       ++cursor_.y;
-    } else 
+    }
+    else
     {
       Scroll1();
     }
@@ -117,7 +149,8 @@ Rectangle<int> Terminal::InputKey(
 
     draw_area.pos = ToplevelWindow::kTopLeftMargin;
     draw_area.size = window_->InnerSize();
-  } else if (ascii == '\b')
+  }
+  else if (ascii == '\b')
   {
     if (cursor_.x > 0)
     {
@@ -158,17 +191,16 @@ Rectangle<int> Terminal::InputKey(
 void Terminal::Scroll1()
 {
   Rectangle<int> move_src{
-    ToplevelWindow::kTopLeftMargin + Vector2D<int>{4, 4 + 16},
-    {8 * kColumns, 16 * (kRows - 1)}
-  };
+      ToplevelWindow::kTopLeftMargin + Vector2D<int>{4, 4 + 16},
+      {8 * kColumns, 16 * (kRows - 1)}};
   window_->Move(ToplevelWindow::kTopLeftMargin + Vector2D<int>{4, 4}, move_src);
   FillRectangle(*window_->InnerWriter(), {4, 4 + 16 * cursor_.y}, {8 * kColumns, 16}, {0, 0, 0});
 }
 
 void Terminal::ExecuteLine()
 {
-  char* command = &linebuf_[0];
-  char* first_arg = strchr(&linebuf_[0], ' ');
+  char *command = &linebuf_[0];
+  char *first_arg = strchr(&linebuf_[0], ' ');
 
   if (first_arg)
   {
@@ -187,7 +219,7 @@ void Terminal::ExecuteLine()
   else if (strcmp(command, "clear") == 0)
   {
     FillRectangle(*window_->InnerWriter(),
-                {4, 4}, {8 * kColumns, 16 * kRows}, {0, 0, 0});
+                  {4, 4}, {8 * kColumns, 16 * kRows}, {0, 0, 0});
     cursor_.y = 0;
   }
   else if (strcmp(command, "lspci") == 0)
@@ -195,11 +227,11 @@ void Terminal::ExecuteLine()
     char s[64];
     for (int i = 0; i < pci::num_device; ++i)
     {
-      const auto& dev = pci::devices[i];
+      const auto &dev = pci::devices[i];
       auto vendor_id = pci::ReadVendorId(dev.bus, dev.device, dev.function);
       sprintf(s, "%02x:%02x.%d vend=%04x head=%02x class=%02x.%02x.%02x\n",
-          dev.bus, dev.device, dev.function, vendor_id, dev.header_type,
-          dev.class_code.base, dev.class_code.sub, dev.class_code.interface);
+              dev.bus, dev.device, dev.function, vendor_id, dev.header_type,
+              dev.class_code.base, dev.class_code.sub, dev.class_code.interface);
       Print(s);
     }
   }
@@ -220,7 +252,7 @@ void Terminal::ExecuteLine()
       {
         continue;
       }
-      else if(root_dir_entries[i].dir_attr == fat::Attribute::kLongName)
+      else if (root_dir_entries[i].dir_attr == fat::Attribute::kLongName)
       {
         continue;
       }
@@ -234,6 +266,38 @@ void Terminal::ExecuteLine()
         sprintf(s, "%s\n", base);
       }
       Print(s);
+    }
+  }
+  else if (strcmp(command, "cat") == 0)
+  {
+    char s[64];
+
+    auto file_entry = fat::FindFile(first_arg);
+    if (!file_entry)
+    {
+      sprintf(s, "no such file: %s\n", first_arg);
+      Print(s);
+    }
+    else
+    {
+      auto cluster = file_entry->FirstCluster();
+      auto remain_bytes = file_entry->dir_file_size;
+
+      DrawCursor(false);
+      while (cluster != 0 && cluster != fat::kEndOfClusterchain)
+      {
+        char *p = fat::GetSectorByCluster<char>(cluster);
+
+        int i = 0;
+        for (; i < fat::bytes_per_cluster && i < remain_bytes; ++i)
+        {
+          Print(*p);
+          ++p;
+        }
+        remain_bytes -= i;
+        cluster = fat::NextCluster(cluster);
+      }
+      DrawCursor(true);
     }
   }
   else if (command[0] != 0)
@@ -261,7 +325,7 @@ Rectangle<int> Terminal::HistoryUpDown(int direction)
   Rectangle<int> draw_area{first_pos, {8 * (kColumns - 2), 16}};
   FillRectangle(*window_->Writer(), draw_area.pos, draw_area.size, {0, 0, 0});
 
-  const char* history = "";
+  const char *history = "";
   if (cmd_history_index_ >= 0)
   {
     history = &cmd_history_[cmd_history_index_][0];
@@ -278,8 +342,8 @@ Rectangle<int> Terminal::HistoryUpDown(int direction)
 void TaskTerminal(uint64_t task_id, int64_t data)
 {
   __asm__("cli");
-  Task& task = task_manager->CurrentTask();
-  Terminal* terminal = new Terminal;
+  Task &task = task_manager->CurrentTask();
+  Terminal *terminal = new Terminal;
   layer_manager->Move(terminal->LayerID(), {100, 200});
   active_layer->Activate(terminal->LayerID());
   layer_task_map->insert(std::make_pair(terminal->LayerID(), task_id));
@@ -298,35 +362,32 @@ void TaskTerminal(uint64_t task_id, int64_t data)
 
     switch (msg->type)
     {
-      case Message::kTimerTimeout:
-        {
-          const auto area = terminal->BlinkCursor();
-          Message msg = MakeLayerMessage(
-            task_id, terminal->LayerID(), LayerOperation::DrawArea, area
-          );
-          __asm__("cli");
-          task_manager->SendMessage(1, msg);
-          __asm__("sti");
-        }
-        break;
-      case Message::kKeyPush:
-        {
-          const auto area = terminal->InputKey(
-              msg->arg.keyboard.modifier,
-              msg->arg.keyboard.keycode,
-              msg->arg.keyboard.ascii
-          );
+    case Message::kTimerTimeout:
+    {
+      const auto area = terminal->BlinkCursor();
+      Message msg = MakeLayerMessage(
+          task_id, terminal->LayerID(), LayerOperation::DrawArea, area);
+      __asm__("cli");
+      task_manager->SendMessage(1, msg);
+      __asm__("sti");
+    }
+    break;
+    case Message::kKeyPush:
+    {
+      const auto area = terminal->InputKey(
+          msg->arg.keyboard.modifier,
+          msg->arg.keyboard.keycode,
+          msg->arg.keyboard.ascii);
 
-          Message msg = MakeLayerMessage(
-            task_id, terminal->LayerID(), LayerOperation::DrawArea, area
-          );
-          __asm__("cli");
-          task_manager->SendMessage(1, msg);
-          __asm__("sti");
-        }
-        break;
-      default:
-        break;
+      Message msg = MakeLayerMessage(
+          task_id, terminal->LayerID(), LayerOperation::DrawArea, area);
+      __asm__("cli");
+      task_manager->SendMessage(1, msg);
+      __asm__("sti");
+    }
+    break;
+    default:
+      break;
     }
   }
 }
