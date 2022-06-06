@@ -1,10 +1,11 @@
 #pragma once
 
 #include <cstdint>
+#include <cstddef>
 
 /**
  * @see https://download.microsoft.com/download/1/6/1/161ba512-40e2-4cc9-843a-923143f3456c/fatgen103.doc
- * 
+ *
  */
 namespace fat
 {
@@ -88,6 +89,7 @@ namespace fat
   void ReadName(const DirectoryEntry &entry, char *base, char *ext);
   unsigned long NextCluster(unsigned long cluster);
   DirectoryEntry *FindFile(const char *name, unsigned long directory_cluster = 0);
+  size_t LoadFile(void *buf, size_t len, const DirectoryEntry &entry);
 
   static const unsigned long kEndOfClusterchain = 0x0ffffffflu;
 
