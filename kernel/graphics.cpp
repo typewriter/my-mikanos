@@ -107,14 +107,7 @@ PixelWriter *GetPixelWriter()
     return pixel_writer;
 }
 
-Vector2D<int> ScreenSize() {
-    return screen_size;
-}
-
-PixelColor ToColor(uint32_t c)
+Vector2D<int> ScreenSize()
 {
-    return {
-        static_cast<uint8_t>((c >> 16) & 0xff),
-        static_cast<uint8_t>((c >> 8) & 0xff),
-        static_cast<uint8_t>(c & 0xff)};
+    return screen_size;
 }
