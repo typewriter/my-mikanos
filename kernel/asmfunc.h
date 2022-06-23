@@ -18,5 +18,6 @@ extern "C"
     // I/O 読み込み
     uint8_t IoInb(uint8_t port);
 
-    void SwitchContext(void* next_ctx, void* current_ctx);
+    void SwitchContext(void *next_ctx, void *current_ctx);
+    void CallApp(int argc, char **argv, uint16_t cs, uint16_t ss, uint64_t rip, uint64_t rsp);
 }
