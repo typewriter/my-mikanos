@@ -4,7 +4,10 @@
 
 namespace
 {
-    std::array<SegmentDescriptor, 3> gdt;
+    std::array<SegmentDescriptor, 7> gdt;
+    std::array<uint32_t, 26> tss;
+
+    static_assert((kTSS >> 3) + 1 < gdt.size());
 }
 
 void SetCodeSegment(SegmentDescriptor &desc,
@@ -58,4 +61,32 @@ void InitializeSegmentation()
 
     SetDSAll(0);
     SetCSSS(kKernelCS, kKernelSS);
+}
+
+void SetSystemSegment(SegmentDescriptor &desc, DescriptorType type, unsigned int descriptor_privilege_level, uint32_t base, uint32_t limit)
+{
+    SetCodeSegment(desc, type, descriptor_privilege_level, base, limit);
+    desc.bits.system_segment = 0;
+    desc.bits.long_mode = 0;
+}
+
+void InitializeTSS()
+{
+    const int kRSP0Frames = 8;
+    auto [stack0, err] = memory_manager->Allocate(kRSP0Frames);
+    if (err)
+    {
+        printk("failed to allocate rsp0: %s\n", err.Name());
+        exit(1);
+    }
+    uint64_t rsp0 =
+        reinterpret_cast<uint64_t>(stack0.Frame()) + kRSP0Frames * 4096;
+    tss[1] = rsp0 & 0xffffffff;
+    tss[2] = rsp0 >> 32;
+
+    uint64_t tss_addr = reinterpret_cast<uint64_t>(&tss[0]);
+    SetSystemSegment(gdt[kTSS >> 3], DescriptorType::kTSSAvailable, 0, tss_addr & 0xffffffff, sizeof(tss) - 1);
+    gdt[(kTSS >> 3) + 1].data = tss_addr >> 32;
+
+    LoadTR(kTSS);
 }

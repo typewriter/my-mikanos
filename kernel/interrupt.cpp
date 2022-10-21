@@ -29,11 +29,11 @@ __attribute__((interrupt)) void IntHandlerXHCI(InterruptFrame *frame)
     NotifyEndOfInterrupt();
 }
 
-__attribute__((interrupt)) void IntHandlerLAPICTimer(InterruptFrame *frame)
-{
-    LAPICTimerOnInterrupt();
-    NotifyEndOfInterrupt();
-}
+// __attribute__((interrupt)) void IntHandlerLAPICTimer(InterruptFrame *frame)
+// {
+//     LAPICTimerOnInterrupt();
+//     NotifyEndOfInterrupt();
+// }
 
 void InitializeInterrupt()
 {

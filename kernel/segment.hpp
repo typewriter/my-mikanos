@@ -2,6 +2,8 @@
 
 #include <cstdint>
 #include "x86_descriptor.hpp"
+#include "memory_manager.hpp"
+#include "console.hpp"
 
 union SegmentDescriptor
 {
@@ -38,6 +40,9 @@ void SetDataSegment(SegmentDescriptor &desc,
 void SetupSegments();
 
 void InitializeSegmentation();
+void InitializeTSS();
 
 const uint16_t kKernelCS = 1 << 3;
 const uint16_t kKernelSS = 2 << 3;
+const uint16_t kKernelDS = 0;
+const uint16_t kTSS = 5 << 3;

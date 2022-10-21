@@ -118,10 +118,10 @@ Task &TaskManager::NewTask()
   return *tasks_.emplace_back(new Task{latest_id_});
 }
 
-void TaskManager::SwitchTask(bool current_sleep)
+Task *TaskManager::RotateCurrentRunQueue(bool current_sleep)
 {
-  auto& level_queue = running_[current_level_];
-  Task* current_task = level_queue.front();
+  auto &level_queue = running_[current_level_];
+  Task *current_task = level_queue.front();
   level_queue.pop_front();
   if (!current_sleep)
   {
@@ -139,16 +139,28 @@ void TaskManager::SwitchTask(bool current_sleep)
     {
       if (!running_[lv].empty())
       {
-        // printk("Level changed: %d -> %d\n", current_level_, lv);
         current_level_ = lv;
         break;
       }
     }
   }
 
-  Task* next_task = running_[current_level_].front();
+  return current_task;
+}
 
-  SwitchContext(&next_task->Context(), &current_task->Context());
+void TaskManager::SwitchTask(const TaskContext &current_ctx)
+{
+  TaskContext &task_ctx = task_manager->CurrentTask().Context();
+  memcpy(&task_ctx, &current_ctx, sizeof(TaskContext));
+  Task *current_task = RotateCurrentRunQueue(false);
+  if (&CurrentTask() != current_task)
+  {
+    RestoreContext(&CurrentTask().Context());
+  }
+
+  // Task *next_task = running_[current_level_].front();
+
+  // SwitchContext(&next_task->Context(), &current_task->Context());
 }
 
 Task& TaskManager::CurrentTask()
@@ -215,7 +227,8 @@ void TaskManager::Sleep(Task* task)
 
   if (task == running_[current_level_].front())
   {
-    SwitchTask(true);
+    Task *current_task = RotateCurrentRunQueue(true);
+    SwitchContext(&CurrentTask().Context(), &current_task->Context());
     return;
   }
 
