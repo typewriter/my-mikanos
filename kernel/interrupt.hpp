@@ -3,6 +3,7 @@
 #include <array>
 #include <cstdint>
 #include <deque>
+#include "graphics.hpp"
 #include "x86_descriptor.hpp"
 
 enum class LayerOperation {
@@ -109,3 +110,5 @@ struct InterruptFrame
 
 void InitializeInterrupt();
 void NotifyEndOfInterrupt();
+void PrintHex(uint64_t value, int width, Vector2D<int> pos);
+void PrintFrame(InterruptFrame *frame, const char *exp_name);
