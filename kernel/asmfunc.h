@@ -18,11 +18,14 @@ extern "C"
     // I/O 読み込み
     uint8_t IoInb(uint8_t port);
 
-    void CallApp(int argc, char **argv, uint16_t cs, uint16_t ss, uint64_t rip, uint64_t rsp);
+    void CallApp(int argc, char** argv, uint16_t cs, uint16_t ss, uint64_t rip, uint64_t rsp);
 
     void LoadTR(uint16_t sel);
     void IntHandlerLAPICTimer();
 
-    void SwitchContext(void *next_ctx, void *current_ctx);
-    void RestoreContext(void *task_context);
+    void SwitchContext(void* next_ctx, void* current_ctx);
+    void RestoreContext(void* task_context);
+
+    void WriteMSR(uint32_t msr, uint64_t value);
+    void SyscallEntry(void);
 }

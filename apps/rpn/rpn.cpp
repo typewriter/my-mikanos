@@ -1,5 +1,6 @@
 #include <cstring>
 #include <cstdlib>
+#include <cstdint>
 // #include "../../kernel/graphics.hpp"
 
 // auto &printk = *reinterpret_cast<int (*)(const char *, ...)>(0x0000000000110b10);
@@ -22,7 +23,9 @@ void Push(long value)
   stack[stack_ptr] = value;
 }
 
-extern "C" int main(int argc, char **argv)
+extern "C" int64_t SyscallLogString(const char*);
+
+extern "C" int main(int argc, char** argv)
 {
   stack_ptr = -1;
 
@@ -33,6 +36,7 @@ extern "C" int main(int argc, char **argv)
       long b = Pop();
       long a = Pop();
       Push(a + b);
+      SyscallLogString("+");
       // printk("[%d] <- %ld\n", stack_ptr, a + b);
     }
     else if (strcmp(argv[i], "-") == 0)
@@ -40,6 +44,7 @@ extern "C" int main(int argc, char **argv)
       long b = Pop();
       long a = Pop();
       Push(a - b);
+      SyscallLogString("-");
       // printk("[%d] <- %ld\n", stack_ptr, a - b);
     }
     else if (strcmp(argv[i], "*") == 0)
@@ -47,6 +52,7 @@ extern "C" int main(int argc, char **argv)
       long b = Pop();
       long a = Pop();
       Push(a * b);
+      SyscallLogString("*");
       // printk("[%d] <- %ld\n", stack_ptr, a * b);
     }
     else if (strcmp(argv[i], "/") == 0)
@@ -54,22 +60,24 @@ extern "C" int main(int argc, char **argv)
       long b = Pop();
       long a = Pop();
       Push(a / b);
+      SyscallLogString("/");
       // printk("[%d] <- %ld\n", stack_ptr, a / b);
     }
     else
     {
       long a = atol(argv[i]);
       Push(a);
+      SyscallLogString("#");
       // printk("[%d] <- %ld\n", stack_ptr, a);
     }
   }
-
   // fill_rect(*scrn_writer, Vector2D<int>{100, 10}, Vector2D<int>{200, 200}, ToColor(0x00ff00));
 
   if (stack_ptr < 0)
   {
     return 0;
   }
+  SyscallLogString("\nHello, this is RPN\n");
   while (1)
     ;
   // return static_cast<int>(Pop());

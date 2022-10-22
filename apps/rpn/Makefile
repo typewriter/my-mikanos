@@ -9,7 +9,9 @@ LDFLAGS  += --entry main -z norelro --image-base 0xffff800000000000 --static
 .PHONY: all
 all: $(TARGET)
 
-rpn: rpn.o Makefile
-			ld.mold $(LDFLAGS) -o rpn rpn.o -lc -lc++ -lc++abi
+rpn: rpn.o syscall.o Makefile
+			ld.lld $(LDFLAGS) -o rpn rpn.o syscall.o -lc -lc++ -lc++abi
 %.o: %.cpp Makefile
 			clang++ $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
+%.o: %.asm Makefile
+			nasm -f elf64 -o $@ $<

@@ -336,3 +336,35 @@ RestoreContext: ; void RestoreContext(void* task_context);
     mov rdi, [rdi + 0x60]
 
     o64 iret
+
+global WriteMSR
+WriteMSR: ; void WriteMSR(uint32_t msr, uint64_t value);
+    mov rdx, rsi
+    shr rdx, 32
+    mov eax, esi
+    mov ecx, edi
+    wrmsr
+    ret
+
+extern syscall_table
+global SyscallEntry
+SyscallEntry: ; void SyscallEntry(void);
+    push rbp
+    push rcx ; original RIP
+    push r11 ; original RFLAGS
+
+    mov rcx, r10
+    and eax, 0x7fffffff
+    mov rbp, rsp
+    and rsp, 0xfffffffffffffff0
+
+    call [syscall_table + 8 * eax]
+    ; rbx, r12-15 は callee-saved, 
+    ; rax は戻り値用なので、それぞれ呼び出し側では保存しない
+
+    mov rsp, rbp
+
+    pop r11
+    pop rcx
+    pop rbp
+    o64 sysret
