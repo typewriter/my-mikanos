@@ -610,6 +610,10 @@ Error Terminal::ExecuteFile(const fat::DirectoryEntry &file_entry, char *command
     return MAKE_ERROR(Error::kSuccess);
   }
 
+  if (auto err = LoadELF(elf_header)) {
+    return err;
+  }
+
   // ELF バイナリはエントリポイント（初期実行する関数のアドレス）を調べてそこから実行
   LinearAddress4Level args_frame_addr{0xffff'ffff'ffff'f000};
   if (auto err = SetupPageMaps(args_frame_addr, 1))

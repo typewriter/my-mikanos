@@ -24,6 +24,7 @@
 #include "pci.hpp"
 #include "queue.hpp"
 #include "segment.hpp"
+#include "syscall.hpp"
 #include "task.hpp"
 #include "terminal.hpp"
 #include "timer.hpp"
@@ -185,6 +186,7 @@ extern "C" void KernelMainNewStack(
   __asm__("sti");
   bool textbox_cursor_visible = false;
 
+  InitializeSyscall();
   InitializeTask();
   Task& main_task = task_manager->CurrentTask();
   const uint64_t task_terminal_id = task_manager->NewTask()
