@@ -1,0 +1,3 @@
+[submodule "osbook"]
+	path = osbook
+	url = https://github.com/uchan-nos/mikanos-build.git
